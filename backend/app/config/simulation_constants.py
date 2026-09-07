@@ -109,7 +109,7 @@ RADIATION_DECAY_PER_MGY_PER_DAY = 0.25
 # Light: saturating response normalised to the crop's optimal photoperiod,
 # with a mild penalty for every hour beyond it (plants need a dark period).
 LIGHT_SATURATION_HOURS = 10.0
-EXCESS_LIGHT_PENALTY_PER_HOUR = 0.01
+EXCESS_LIGHT_PENALTY_PER_HOUR = 0.02
 
 # CO2: rectangular hyperbola normalised so Earth ambient CO2 gives 1.0.
 # Enrichment to ~1000 ppm yields roughly +20 %, saturating around +30 %.
