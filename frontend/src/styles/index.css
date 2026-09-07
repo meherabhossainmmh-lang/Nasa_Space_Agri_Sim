@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for the dark "mission control" look.
+ * Tailwind v4 reads these @theme values and exposes them as utility classes,
+ * e.g. bg-space-900, text-neon-cyan, border-space-700.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-space-950: #030712;
+  --color-space-900: #070b1a;
+  --color-space-800: #0d1330;
+  --color-space-700: #1a2248;
+  --color-space-600: #2a3564;
+
+  --color-neon-cyan: #22d3ee;
+  --color-neon-green: #4ade80;
+  --color-neon-blue: #60a5fa;
+  --color-neon-purple: #a78bfa;
+  --color-neon-amber: #fbbf24;
+  --color-neon-rose: #fb7185;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #e2e8f0;
+  background-color: var(--color-space-950);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
