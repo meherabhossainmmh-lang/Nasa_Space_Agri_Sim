@@ -18,8 +18,8 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 p-6 lg:grid-cols-[360px_1fr]">
         <ControlPanel config={config} params={params} onChange={setParam} onReset={resetParams} />
-        <section className="rounded-2xl border border-space-700/70 bg-space-900/70 p-5 text-sm text-slate-400">
-          Selected crop: <span className="text-slate-200">{params.crop}</span>
+        <section className="rounded-2xl border border-space-700/70 bg-space-900/70 p-5 font-mono text-xs text-slate-400">
+          <pre>{JSON.stringify(params, null, 2)}</pre>
         </section>
       </div>
     </main>
