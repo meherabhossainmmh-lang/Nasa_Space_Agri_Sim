@@ -35,3 +35,4 @@ npm-debug.log*
 # --- local caches ---
 .npm/
 .cache/
+.sudo_as_admin_successful
