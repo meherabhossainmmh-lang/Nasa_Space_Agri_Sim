@@ -76,3 +76,19 @@ def test_crops_and_config_endpoints(client):
     config = client.get("/api/config").json()
     assert set(config["parameters"]) >= {"gravity", "radiation", "waterAvailability", "lightHours", "co2Level", "simulationDays"}
     assert config["durationOptions"] == [7, 14, 30, 60, 90]
+
+
+def test_validation_errors_have_flat_message_and_fields(client):
+    response = client.post("/api/simulate", json={**BASE_REQUEST, "gravity": 9, "crop": "kale"})
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"] == "validation_error"
+    assert set(body["fields"]) == {"gravity", "crop"}
+    assert "gravity" in body["message"] and "crop" in body["message"]
+    assert isinstance(body["detail"], list)
+
+
+def test_malformed_json_is_a_422_not_a_500(client):
+    response = client.post("/api/simulate", content="{not json", headers={"Content-Type": "application/json"})
+    assert response.status_code == 422
+    assert response.json()["error"] == "validation_error"

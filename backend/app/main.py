@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import settings
 from app.routes import health, simulation
+from app.routes.errors import register_error_handlers
 
 app = FastAPI(
     title=settings.app_name,
@@ -28,6 +29,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+register_error_handlers(app)
 
 app.include_router(health.router, prefix=settings.api_prefix)
 app.include_router(simulation.router, prefix=settings.api_prefix)

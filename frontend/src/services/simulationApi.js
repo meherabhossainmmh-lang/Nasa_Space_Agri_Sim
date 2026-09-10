@@ -20,6 +20,7 @@ export class ApiError extends Error {
 /** Turn a FastAPI validation error into something readable. */
 function describeErrorBody(body) {
   if (!body) return null
+  if (typeof body.message === 'string' && body.message) return body.message
   if (typeof body.detail === 'string') return body.detail
   if (Array.isArray(body.detail)) {
     return body.detail
@@ -56,7 +57,12 @@ async function request(path, { method = 'GET', body, signal } = {}) {
   }
 
   if (!response.ok) {
-    const message = describeErrorBody(payload) || `Request failed with status ${response.status}`
+    // A 5xx with no JSON body almost always means the dev proxy could not
+    // reach FastAPI, so say that instead of a bare status code.
+    const unreachable = response.status >= 500 && payload == null
+    const message = unreachable
+      ? 'Could not reach the simulation backend. Is the API server running on port 8000?'
+      : describeErrorBody(payload) || `Request failed with status ${response.status}`
     throw new ApiError(message, { status: response.status, details: payload })
   }
   return payload

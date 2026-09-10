@@ -20,7 +20,7 @@ import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
 export default function DashboardPage() {
   const { config } = useSimulationConfig()
   const { params, setParam, resetParams } = useSimulationParams(config)
-  const { result, error, isLoading } = useSimulation(params)
+  const { result, error, isLoading, retry } = useSimulation(params)
 
   return (
     <div className="min-h-screen text-slate-200">
@@ -36,10 +36,17 @@ export default function DashboardPage() {
           {error && (
             <div className="flex items-start gap-3 rounded-xl border border-neon-rose/40 bg-neon-rose/10 px-4 py-3 text-sm text-neon-rose">
               <span aria-hidden="true">⚠️</span>
-              <div>
+              <div className="flex-1">
                 <p className="font-medium">Simulation unavailable</p>
                 <p className="text-neon-rose/80">{error.message}</p>
               </div>
+              <button
+                type="button"
+                onClick={retry}
+                className="rounded-lg border border-neon-rose/50 px-3 py-1 text-xs font-medium hover:bg-neon-rose/10"
+              >
+                Retry
+              </button>
             </div>
           )}
 
