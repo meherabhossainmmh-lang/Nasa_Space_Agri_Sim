@@ -1,5 +1,6 @@
 import ControlPanel from '../components/ControlPanel.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
+import MetricsGrid from '../components/MetricsGrid.jsx'
 import { useSimulationParams } from '../hooks/useSimulationParams.js'
 import { useSimulation } from '../hooks/useSimulation.js'
 import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
@@ -24,26 +25,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 p-6 lg:grid-cols-[360px_1fr]">
         <ControlPanel config={config} params={params} onChange={setParam} onReset={resetParams} />
-        <section className="rounded-2xl border border-space-700/70 bg-space-900/70 p-5 font-mono text-xs text-slate-400">
-          {error && <p className="text-neon-rose">{error.message}</p>}
-          {result && (
-            <pre>
-              {JSON.stringify(
-                {
-                  cropYield: result.cropYield,
-                  growthRate: result.growthRate,
-                  waterUsed: result.waterUsed,
-                  waterRecovered: result.waterRecovered,
-                  co2Removed: result.co2Removed,
-                  estimatedOxygenProduced: result.estimatedOxygenProduced,
-                  spaceGrowthPercentage: result.spaceGrowthPercentage,
-                  comparison: result.comparison,
-                },
-                null,
-                2,
-              )}
-            </pre>
+        <section className="space-y-6">
+          {error && (
+            <p className="rounded-xl border border-neon-rose/40 bg-neon-rose/10 px-4 py-3 text-sm text-neon-rose">
+              {error.message}
+            </p>
           )}
+          <MetricsGrid result={result} isLoading={isLoading} />
         </section>
       </div>
     </main>
