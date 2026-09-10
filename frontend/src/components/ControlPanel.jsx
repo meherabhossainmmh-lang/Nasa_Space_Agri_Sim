@@ -13,6 +13,7 @@ export default function ControlPanel({ config, params, onChange, onReset }) {
 
   return (
     <Panel
+      className="lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto"
       title="Mission controls"
       subtitle="Adjust the environment and watch the results update"
       action={

@@ -13,7 +13,7 @@ export default function SegmentedToggle({ options, value, onChange, ariaLabel })
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(option.value)}
-            className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
+            className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
               selected ? 'bg-neon-cyan/15 text-neon-cyan' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
