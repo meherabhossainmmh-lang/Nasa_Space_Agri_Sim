@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_CONFIG, defaultParamsFromConfig } from '../services/defaultConfig.js'
 import { clampToRange, sanitiseParams } from '../services/validation.js'
 
@@ -8,28 +8,28 @@ import { clampToRange, sanitiseParams } from '../services/validation.js'
  * Values are clamped to the ranges in `config` so the API never sees bad input.
  */
 export function useSimulationParams(config = DEFAULT_CONFIG) {
-  const [params, setParams] = useState(() => defaultParamsFromConfig(config))
+  const [rawParams, setRawParams] = useState(() => defaultParamsFromConfig(config))
 
-  // if the backend config arrives with different ranges, keep params inside them
-  useEffect(() => {
-    setParams((previous) => {
-      const cleaned = sanitiseParams(previous, config)
-      const changed = Object.keys(cleaned).some((k) => cleaned[k] !== previous[k])
-      return changed ? cleaned : previous
-    })
-  }, [config])
+  // If the backend config arrives with different ranges, the stored values are
+  // re-clamped on the fly. Derived during render (memoised) rather than via an
+  // effect, so there is never an intermediate render with out-of-range values.
+  const params = useMemo(() => {
+    const cleaned = sanitiseParams(rawParams, config)
+    const changed = Object.keys(cleaned).some((k) => cleaned[k] !== rawParams[k])
+    return changed ? cleaned : rawParams
+  }, [rawParams, config])
 
   const setParam = useCallback(
     (name, value) => {
       const range = config.parameters?.[name]
       const next = range ? clampToRange(value, range) : value
-      setParams((previous) => (previous[name] === next ? previous : { ...previous, [name]: next }))
+      setRawParams((previous) => (previous[name] === next ? previous : { ...previous, [name]: next }))
     },
     [config],
   )
 
   const resetParams = useCallback(() => {
-    setParams(defaultParamsFromConfig(config))
+    setRawParams(defaultParamsFromConfig(config))
   }, [config])
 
   return { params, setParam, resetParams }

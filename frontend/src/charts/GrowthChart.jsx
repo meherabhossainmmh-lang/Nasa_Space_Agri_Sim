@@ -31,7 +31,7 @@ export default function GrowthChart({ data = [], mode = 'standing', cycleLengthD
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 18, right: 12, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="earthFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={CHART_COLORS.earth} stopOpacity={0.35} />
@@ -67,7 +67,7 @@ export default function GrowthChart({ data = [], mode = 'standing', cycleLengthD
               x={day}
               stroke="#334155"
               strokeDasharray="4 4"
-              label={{ value: 'harvest', position: 'top', fill: '#64748b', fontSize: 10 }}
+              label={{ value: 'harvest', position: 'insideTop', fill: '#64748b', fontSize: 10 }}
             />
           ))}
           <Area

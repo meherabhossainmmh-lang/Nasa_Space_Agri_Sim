@@ -1,25 +1,30 @@
 import { useMemo } from 'react'
 
 /**
+ * Deterministic pseudo-random star positions so the sky never reshuffles.
+ * Lives outside the component because it is pure and has no React state.
+ */
+function generateStars(count, seed = 42) {
+  let state = seed
+  const rand = () => {
+    state = (state * 9301 + 49297) % 233280
+    return state / 233280
+  }
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: rand() * 100,
+    y: rand() * 100,
+    r: 0.4 + rand() * 1.1,
+    o: 0.25 + rand() * 0.6,
+  }))
+}
+
+/**
  * Decorative background: a few dozen tiny stars plus a soft nebula glow.
  * Pure CSS/SVG, no external assets, fixed behind the content.
  */
 export default function Starfield({ count = 90 }) {
-  const stars = useMemo(() => {
-    // deterministic pseudo-random so the sky doesn't reshuffle on re-render
-    let seed = 42
-    const rand = () => {
-      seed = (seed * 9301 + 49297) % 233280
-      return seed / 233280
-    }
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      x: rand() * 100,
-      y: rand() * 100,
-      r: 0.4 + rand() * 1.1,
-      o: 0.25 + rand() * 0.6,
-    }))
-  }, [count])
+  const stars = useMemo(() => generateStars(count), [count])
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

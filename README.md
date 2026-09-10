@@ -241,6 +241,7 @@ backend too. To point at a different backend, copy `.env.example` to
 `.env.local` and set `VITE_BACKEND_URL`.
 
 Production build: `npm run build` (output in `frontend/dist/`).
+Lint: `npm run lint`.
 
 ## 9. Running the backend
 
