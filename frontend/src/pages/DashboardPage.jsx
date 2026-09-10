@@ -3,6 +3,7 @@ import StatusBadge from '../components/StatusBadge.jsx'
 import MetricsGrid from '../components/MetricsGrid.jsx'
 import GrowthPanel from '../components/GrowthPanel.jsx'
 import LifeSupportPanel from '../components/LifeSupportPanel.jsx'
+import ComparisonPanel from '../components/ComparisonPanel.jsx'
 import { useSimulationParams } from '../hooks/useSimulationParams.js'
 import { useSimulation } from '../hooks/useSimulation.js'
 import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
@@ -34,6 +35,11 @@ export default function DashboardPage() {
             </p>
           )}
           <MetricsGrid result={result} isLoading={isLoading} />
+          <ComparisonPanel
+            result={result}
+            mode={params.earthComparisonMode}
+            onModeChange={(mode) => setParam('earthComparisonMode', mode)}
+          />
           <GrowthPanel result={result} />
           <LifeSupportPanel result={result} />
         </section>
