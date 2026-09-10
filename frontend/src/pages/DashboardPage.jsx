@@ -1,6 +1,7 @@
 import ControlPanel from '../components/ControlPanel.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import MetricsGrid from '../components/MetricsGrid.jsx'
+import GrowthPanel from '../components/GrowthPanel.jsx'
 import { useSimulationParams } from '../hooks/useSimulationParams.js'
 import { useSimulation } from '../hooks/useSimulation.js'
 import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
@@ -32,6 +33,7 @@ export default function DashboardPage() {
             </p>
           )}
           <MetricsGrid result={result} isLoading={isLoading} />
+          <GrowthPanel result={result} />
         </section>
       </div>
     </main>
