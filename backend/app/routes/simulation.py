@@ -12,6 +12,7 @@ from app.config import simulation_constants as constants
 from app.models.simulation import SimulationConfigResponse, SimulationRequest, SimulationResponse
 from app.simulation import crops
 from app.simulation.engine import SimulationInput, run_simulation
+from app.simulation.model_description import MODEL_STATUS, describe_assumptions
 from app.simulation.serializers import PHASE_1_DISCLAIMER, to_response
 
 router = APIRouter(tags=["simulation"])
@@ -58,4 +59,12 @@ def simulation_config() -> SimulationConfigResponse:
         gravityPresets=constants.GRAVITY_PRESETS,
         radiationPresets=constants.RADIATION_PRESETS,
         disclaimer=PHASE_1_DISCLAIMER,
+        assumptions=describe_assumptions(),
+        modelStatus=MODEL_STATUS,
     )
+
+
+@router.get("/assumptions")
+def model_assumptions() -> dict:
+    """The model's formulas and constants, described by the backend itself."""
+    return {"assumptions": describe_assumptions(), "modelStatus": MODEL_STATUS, "disclaimer": PHASE_1_DISCLAIMER}

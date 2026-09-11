@@ -261,6 +261,22 @@ class Preset(BaseModel):
     value: float
 
 
+class ModelAssumption(BaseModel):
+    key: str
+    title: str
+    formula: str
+    note: str
+    constants: dict[str, float]
+
+
+class ModelStatus(BaseModel):
+    phase: str
+    kind: str
+    dataSource: str
+    validation: str
+    planned: list[str]
+
+
 class SimulationConfigResponse(BaseModel):
     """Everything the UI needs to render its controls (single source of truth)."""
 
@@ -271,3 +287,5 @@ class SimulationConfigResponse(BaseModel):
     gravityPresets: list[Preset]
     radiationPresets: list[Preset]
     disclaimer: str
+    assumptions: list[ModelAssumption] = []
+    modelStatus: ModelStatus | None = None

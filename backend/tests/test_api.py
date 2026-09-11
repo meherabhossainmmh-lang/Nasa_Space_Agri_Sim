@@ -143,3 +143,17 @@ def test_comparison_includes_impact_breakdown(client):
     assert dry["comparison"]["isDefined"] is False
     assert dry["comparison"]["impact"] is None
     assert dry["cropYield"] == 0.0
+
+
+def test_config_describes_the_model_assumptions(client):
+    body = client.get("/api/config").json()
+    keys = [a["key"] for a in body["assumptions"]]
+    assert {"growth", "gravity", "radiation", "water", "light", "co2", "waterLoop", "gasExchange"} <= set(keys)
+    loop = next(a for a in body["assumptions"] if a["key"] == "waterLoop")
+    assert loop["constants"]["recoveryEfficiency"] == pytest.approx(0.9)
+    assert body["modelStatus"]["phase"] == "Phase 1"
+    assert "not validated" in body["modelStatus"]["validation"].lower()
+
+    alone = client.get("/api/assumptions")
+    assert alone.status_code == 200
+    assert alone.json()["assumptions"] == body["assumptions"]
