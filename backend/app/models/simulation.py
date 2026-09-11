@@ -89,10 +89,13 @@ class GrowthFactors(BaseModel):
 class DailyGrowthEntry(BaseModel):
     day: int
     cycle: int
-    earthBiomass: float
-    spaceBiomass: float
-    earthCumulative: float
-    spaceCumulative: float
+    earthBiomass: float = Field(description="Standing (unharvested) biomass on Earth that day (g)")
+    spaceBiomass: float = Field(description="Standing (unharvested) biomass in space that day (g)")
+    earthCumulative: float = Field(description="Standing + harvested so far on Earth (g)")
+    spaceCumulative: float = Field(description="Standing + harvested so far in space (g)")
+    earthHarvested: float = Field(0.0, description="Harvested so far on Earth (g)")
+    spaceHarvested: float = Field(0.0, description="Harvested so far in space (g)")
+    isHarvestDay: bool = Field(False, description="The crop is harvested at the end of this day")
 
 
 class DailyWaterEntry(BaseModel):
@@ -116,7 +119,10 @@ class DailyLifeSupportEntry(BaseModel):
 
 
 class ScenarioSummary(BaseModel):
-    cropYield: float = Field(description="Edible biomass produced over the run (g)")
+    cropYield: float = Field(description="Edible biomass produced over the run: harvested + standing (g)")
+    harvestedYield: float = Field(0.0, description="Edible biomass actually harvested (whole cycles) (g)")
+    standingBiomass: float = Field(0.0, description="Unharvested biomass still growing at the end (g)")
+    potentialHarvest: float = Field(0.0, description="What one full cycle yields under these conditions (g)")
     growthRate: float = Field(description="Average biomass gain (g/day)")
     waterUsed: float = Field(description="Total water consumed (L)")
     waterRecovered: float = Field(description="Total water returned to the loop (L)")
@@ -143,6 +149,27 @@ class CropSummary(BaseModel):
     cyclesCompleted: int
 
 
+class HarvestSummary(BaseModel):
+    """
+    Keeps 'what is growing' apart from 'what has been harvested'.
+
+    A 30 day lettuce run (35 day cycle) has a large standing biomass but zero
+    harvested yield - the crop is simply not ready inside the window.
+    """
+
+    standingBiomass: float = Field(description="Unharvested biomass at the end of the run (g)")
+    harvestedYield: float = Field(description="Biomass harvested inside the window (g)")
+    cumulativeBiomass: float = Field(description="Standing + harvested = total produced (g)")
+    potentialHarvest: float = Field(description="Yield of one full cycle under the space conditions (g)")
+    cycleLengthDays: int
+    cyclesCompleted: int
+    harvestDays: list[int] = Field(description="Days inside the window on which a harvest happens")
+    nextHarvestDay: int = Field(description="First harvest day after the window ends")
+    daysUntilNextHarvest: int = Field(description="Days from the end of the window to the next harvest")
+    harvestWithinWindow: bool
+    simulationDays: int
+
+
 class LifeSupportContext(BaseModel):
     crewO2DaysSupported: float = Field(description="Person-days of O2 the produced oxygen covers")
     crewCo2DaysRemoved: float = Field(description="Person-days of exhaled CO2 the crop absorbed")
@@ -165,6 +192,7 @@ class SimulationResponse(BaseModel):
     space: ScenarioSummary
     earth: ScenarioSummary
     comparison: ComparisonSummary
+    harvest: HarvestSummary
     lifeSupport: LifeSupportContext
 
     # time series for the charts

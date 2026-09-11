@@ -15,6 +15,7 @@ from app.models.simulation import (
     DailyLifeSupportEntry,
     DailyWaterEntry,
     GrowthFactors,
+    HarvestSummary,
     LifeSupportContext,
     ScenarioSummary,
     SimulationRequest,
@@ -36,6 +37,9 @@ def _r(value: float, digits: int = 2) -> float:
 def _scenario_summary(scenario: ScenarioResult) -> ScenarioSummary:
     return ScenarioSummary(
         cropYield=_r(scenario.crop_yield_g, 1),
+        harvestedYield=_r(scenario.harvested_yield_g, 1),
+        standingBiomass=_r(scenario.standing_biomass_g, 1),
+        potentialHarvest=_r(scenario.potential_harvest_g, 1),
         growthRate=_r(scenario.growth_rate_g_per_day, 2),
         waterUsed=_r(scenario.water_used_l, 2),
         waterRecovered=_r(scenario.water_recovered_l, 2),
@@ -56,9 +60,30 @@ def _daily_growth(result: SimulationResult) -> list[DailyGrowthEntry]:
                 spaceBiomass=_r(space.biomass_g, 1),
                 earthCumulative=_r(earth.cumulative_biomass_g, 1),
                 spaceCumulative=_r(space.cumulative_biomass_g, 1),
+                earthHarvested=_r(earth.harvested_g, 1),
+                spaceHarvested=_r(space.harvested_g, 1),
+                isHarvestDay=space.is_harvest_day,
             )
         )
     return entries
+
+
+def _harvest_summary(result: SimulationResult) -> HarvestSummary:
+    space = result.space
+    days = result.inputs.simulation_days
+    return HarvestSummary(
+        standingBiomass=_r(space.standing_biomass_g, 1),
+        harvestedYield=_r(space.harvested_yield_g, 1),
+        cumulativeBiomass=_r(space.crop_yield_g, 1),
+        potentialHarvest=_r(space.potential_harvest_g, 1),
+        cycleLengthDays=result.crop.growth_duration_days,
+        cyclesCompleted=result.cycles_completed,
+        harvestDays=result.harvest_days,
+        nextHarvestDay=result.next_harvest_day,
+        daysUntilNextHarvest=result.next_harvest_day - days,
+        harvestWithinWindow=result.harvest_within_window,
+        simulationDays=days,
+    )
 
 
 def _daily_water(scenario: ScenarioResult) -> list[DailyWaterEntry]:
@@ -122,6 +147,7 @@ def to_response(result: SimulationResult, request: SimulationRequest) -> Simulat
             spaceGrowthPercentage=_r(result.space_growth_percentage, 1),
             earthComparisonMode=request.earthComparisonMode,
         ),
+        harvest=_harvest_summary(result),
         lifeSupport=LifeSupportContext(
             crewO2DaysSupported=_r(gas_exchange.crew_o2_days_supported(space.o2_produced_g), 2),
             crewCo2DaysRemoved=_r(gas_exchange.crew_co2_days_removed(space.co2_removed_g), 2),

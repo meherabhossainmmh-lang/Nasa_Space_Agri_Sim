@@ -11,6 +11,16 @@ If the simulation runs longer than one cycle the crop is harvested and the
 next cycle starts on the following day (continuous production, the way a
 space greenhouse would actually be operated). `cumulative_biomass` keeps the
 harvested total so yield keeps climbing across cycles.
+
+Three quantities are kept apart on purpose, because they answer different
+questions:
+
+    standing biomass   what is growing in the chamber right now (unharvested)
+    harvested yield    what has actually been cut and stored (whole cycles)
+    cumulative biomass standing + harvested = everything the crop produced
+
+A 30 day lettuce run (35 day cycle) therefore has 0 g harvested yield even
+though the standing biomass is large - the crop simply is not ready yet.
 """
 
 from __future__ import annotations
@@ -30,6 +40,8 @@ class DailyGrowthPoint:
     biomass_g: float  # standing edible biomass on this day
     cumulative_biomass_g: float  # standing biomass + everything harvested so far
     growth_fraction: float  # 0..1 position on the logistic curve
+    harvested_g: float = 0.0  # edible biomass harvested up to and including this day
+    is_harvest_day: bool = False  # the crop reaches maturity and is cut on this day
 
 
 def logistic_progress(day_in_cycle: int, cycle_length_days: int) -> float:
@@ -83,6 +95,12 @@ def simulate_growth(
         fraction = logistic_progress(day_in_cycle, cycle_length)
         standing = potential_harvest_g * fraction
 
+        # Harvest happens at the end of the harvest day, so the harvested total
+        # already includes this cycle on that day while the curve still shows
+        # the mature crop being cut.
+        harvests_done = day // cycle_length if day > 0 else 0
+        is_harvest_day = day > 0 and day_in_cycle == cycle_length
+
         points.append(
             DailyGrowthPoint(
                 day=day,
@@ -91,15 +109,54 @@ def simulate_growth(
                 biomass_g=standing,
                 cumulative_biomass_g=harvested_total + standing,
                 growth_fraction=fraction,
+                harvested_g=harvests_done * potential_harvest_g,
+                is_harvest_day=is_harvest_day,
             )
         )
 
     return points
 
 
+def potential_harvest_g(crop: CropProfile, growth_factor: float, growing_area_m2: float) -> float:
+    """Edible biomass one full cycle yields under these conditions (g)."""
+    return crop.harvest_biomass_g * growth_factor * growing_area_m2
+
+
+def harvest_days(simulation_days: int, cycle_length_days: int) -> list[int]:
+    """Days on which a harvest happens inside the simulation window."""
+    if cycle_length_days <= 0:
+        return []
+    return list(range(cycle_length_days, simulation_days + 1, cycle_length_days))
+
+
+def next_harvest_day(simulation_days: int, cycle_length_days: int) -> int:
+    """First harvest day after the simulation window ends."""
+    if cycle_length_days <= 0:
+        return simulation_days
+    return (simulation_days // cycle_length_days + 1) * cycle_length_days
+
+
 def total_yield_g(points: list[DailyGrowthPoint]) -> float:
     """Edible biomass produced by the end of the run (harvested + standing)."""
     return points[-1].cumulative_biomass_g if points else 0.0
+
+
+def harvested_yield_g(points: list[DailyGrowthPoint]) -> float:
+    """Edible biomass actually harvested by the end of the run (whole cycles only)."""
+    return points[-1].harvested_g if points else 0.0
+
+
+def standing_biomass_g(points: list[DailyGrowthPoint]) -> float:
+    """
+    Unharvested biomass still growing when the run ends.
+
+    Defined as total minus harvested so the three summary numbers always add
+    up. When the last day is a harvest day the crop was just cut, so the
+    standing biomass is zero even though the curve peaks on that day.
+    """
+    if not points:
+        return 0.0
+    return max(points[-1].cumulative_biomass_g - points[-1].harvested_g, 0.0)
 
 
 def average_growth_rate_g_per_day(points: list[DailyGrowthPoint]) -> float:

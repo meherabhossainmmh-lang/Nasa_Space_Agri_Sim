@@ -55,3 +55,40 @@ def test_short_run_gives_partial_yield():
     points = growth.simulate_growth(LETTUCE, 1.0, 7, 1.0)
     assert 0 < growth.total_yield_g(points) < LETTUCE.harvest_biomass_g
     assert growth.average_growth_rate_g_per_day(points) > 0
+
+
+def test_no_harvest_inside_a_short_window():
+    # 30 day lettuce run, 35 day cycle: lots of standing biomass, nothing harvested
+    points = growth.simulate_growth(LETTUCE, 1.0, 30, 1.0)
+    assert growth.harvested_yield_g(points) == 0.0
+    assert growth.standing_biomass_g(points) == pytest.approx(growth.total_yield_g(points))
+    assert not any(p.is_harvest_day for p in points)
+    assert growth.harvest_days(30, 35) == []
+    assert growth.next_harvest_day(30, 35) == 35
+
+
+def test_harvest_day_moves_biomass_from_standing_to_harvested():
+    points = growth.simulate_growth(LETTUCE, 1.0, 36, 1.0)
+    harvest = points[35]
+    assert harvest.is_harvest_day
+    assert harvest.harvested_g == pytest.approx(LETTUCE.harvest_biomass_g)
+    # the day after the harvest the new cycle starts almost from zero
+    assert points[36].biomass_g < 0.05 * LETTUCE.harvest_biomass_g
+    assert points[36].harvested_g == pytest.approx(LETTUCE.harvest_biomass_g)
+
+
+def test_standing_plus_harvested_equals_total():
+    for days in (7, 35, 36, 90, 200):
+        points = growth.simulate_growth(LETTUCE, 0.9, days, 3.0)
+        total = growth.harvested_yield_g(points) + growth.standing_biomass_g(points)
+        assert total == pytest.approx(growth.total_yield_g(points))
+        for p in points:
+            assert p.harvested_g <= p.cumulative_biomass_g + 1e-9
+
+
+def test_harvest_days_and_next_harvest_for_multiple_cycles():
+    assert growth.harvest_days(90, 35) == [35, 70]
+    assert growth.next_harvest_day(90, 35) == 105
+    assert growth.harvest_days(70, 35) == [35, 70]
+    assert growth.next_harvest_day(70, 35) == 105
+    assert growth.potential_harvest_g(LETTUCE, 0.5, 10.0) == pytest.approx(0.5 * 10.0 * LETTUCE.harvest_biomass_g)

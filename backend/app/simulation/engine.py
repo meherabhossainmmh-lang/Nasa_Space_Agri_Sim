@@ -49,15 +49,18 @@ class ScenarioResult:
 
     label: str
     factors: dict[str, float]
-    crop_yield_g: float
+    crop_yield_g: float  # harvested + standing biomass at the end of the run
     growth_rate_g_per_day: float
     water_used_l: float
     water_recovered_l: float
     co2_removed_g: float
     o2_produced_g: float
-    daily_growth: list[growth.DailyGrowthPoint] = field(repr=False)
-    daily_water: list[water.DailyWaterPoint] = field(repr=False)
-    daily_gas: list[gas_exchange.DailyGasPoint] = field(repr=False)
+    harvested_yield_g: float = 0.0  # whole cycles actually harvested
+    standing_biomass_g: float = 0.0  # still growing, not yet harvested
+    potential_harvest_g: float = 0.0  # what one full cycle yields under these conditions
+    daily_growth: list[growth.DailyGrowthPoint] = field(default_factory=list, repr=False)
+    daily_water: list[water.DailyWaterPoint] = field(default_factory=list, repr=False)
+    daily_gas: list[gas_exchange.DailyGasPoint] = field(default_factory=list, repr=False)
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,20 @@ class SimulationResult:
     @property
     def cycles_completed(self) -> int:
         return self.inputs.simulation_days // self.crop.growth_duration_days
+
+    @property
+    def harvest_days(self) -> list[int]:
+        """Days inside the window on which the crop is harvested (may be empty)."""
+        return growth.harvest_days(self.inputs.simulation_days, self.crop.growth_duration_days)
+
+    @property
+    def next_harvest_day(self) -> int:
+        """First harvest day after the window ends (the crop still growing at the end)."""
+        return growth.next_harvest_day(self.inputs.simulation_days, self.crop.growth_duration_days)
+
+    @property
+    def harvest_within_window(self) -> bool:
+        return self.cycles_completed > 0
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +143,9 @@ def _run_scenario(
         label=label,
         factors=env,
         crop_yield_g=growth.total_yield_g(daily_growth),
+        harvested_yield_g=growth.harvested_yield_g(daily_growth),
+        standing_biomass_g=growth.standing_biomass_g(daily_growth),
+        potential_harvest_g=growth.potential_harvest_g(crop, env["combined"], growing_area),
         growth_rate_g_per_day=growth.average_growth_rate_g_per_day(daily_growth),
         water_used_l=water.total_water_used_l(daily_water),
         water_recovered_l=water.total_water_recovered_l(daily_water),

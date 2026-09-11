@@ -79,3 +79,23 @@ def test_cycles_completed():
 def test_unknown_crop_raises():
     with pytest.raises(KeyError):
         run_simulation(make_input(crop="banana"))
+
+
+def test_harvest_bookkeeping_is_exposed_by_the_engine():
+    result = run_simulation(make_input(simulation_days=30))
+    assert result.space.harvested_yield_g == 0.0
+    assert result.space.standing_biomass_g == pytest.approx(result.space.crop_yield_g)
+    assert not result.harvest_within_window
+    assert result.harvest_days == []
+    assert result.next_harvest_day == 35
+
+    longer = run_simulation(make_input(simulation_days=90))
+    assert longer.harvest_days == [35, 70]
+    assert longer.space.harvested_yield_g == pytest.approx(2 * longer.space.potential_harvest_g)
+    assert longer.space.harvested_yield_g + longer.space.standing_biomass_g == pytest.approx(
+        longer.space.crop_yield_g
+    )
+    # the potential harvest is exactly one cycle under the space conditions
+    assert longer.space.potential_harvest_g == pytest.approx(
+        longer.crop.harvest_biomass_g * longer.space.factors["combined"] * 10.0
+    )

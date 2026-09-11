@@ -92,3 +92,21 @@ def test_malformed_json_is_a_422_not_a_500(client):
     response = client.post("/api/simulate", content="{not json", headers={"Content-Type": "application/json"})
     assert response.status_code == 422
     assert response.json()["error"] == "validation_error"
+
+
+def test_harvest_summary_separates_standing_and_harvested(client):
+    body = client.post("/api/simulate", json={"crop": "lettuce", "simulationDays": 30}).json()
+    harvest = body["harvest"]
+    assert harvest["harvestWithinWindow"] is False
+    assert harvest["harvestedYield"] == 0.0
+    assert harvest["standingBiomass"] == body["cropYield"]
+    assert harvest["nextHarvestDay"] == 35 and harvest["daysUntilNextHarvest"] == 5
+    assert body["space"]["harvestedYield"] == 0.0
+    assert body["dailyGrowthData"][-1]["spaceHarvested"] == 0.0
+
+    body = client.post("/api/simulate", json={"crop": "lettuce", "simulationDays": 90}).json()
+    harvest = body["harvest"]
+    assert harvest["harvestDays"] == [35, 70] and harvest["cyclesCompleted"] == 2
+    assert harvest["harvestedYield"] > 0
+    assert body["dailyGrowthData"][35]["isHarvestDay"] is True
+    assert body["dailyGrowthData"][35]["spaceHarvested"] > 0
