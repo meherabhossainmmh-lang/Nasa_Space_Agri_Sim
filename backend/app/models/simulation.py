@@ -100,10 +100,14 @@ class DailyGrowthEntry(BaseModel):
 
 class DailyWaterEntry(BaseModel):
     day: int
-    waterUsed: float
+    waterUsed: float = Field(description="Water actually supplied to the crop that day (L)")
     waterRecovered: float
     cumulativeWaterUsed: float
     cumulativeWaterRecovered: float
+    waterDemand: float = Field(0.0, description="What a healthy canopy would want that day (L)")
+    waterDeficit: float = Field(0.0, description="Unmet demand that day (L)")
+    cumulativeWaterDemand: float = 0.0
+    cumulativeWaterDeficit: float = 0.0
 
 
 class DailyLifeSupportEntry(BaseModel):
@@ -116,6 +120,10 @@ class DailyLifeSupportEntry(BaseModel):
     cumulativeWaterRecovered: float
     cumulativeCo2Removed: float
     cumulativeO2Produced: float
+    waterDemand: float = 0.0
+    waterDeficit: float = 0.0
+    cumulativeWaterDemand: float = 0.0
+    cumulativeWaterDeficit: float = 0.0
 
 
 class ScenarioSummary(BaseModel):
@@ -124,8 +132,10 @@ class ScenarioSummary(BaseModel):
     standingBiomass: float = Field(0.0, description="Unharvested biomass still growing at the end (g)")
     potentialHarvest: float = Field(0.0, description="What one full cycle yields under these conditions (g)")
     growthRate: float = Field(description="Average biomass gain (g/day)")
-    waterUsed: float = Field(description="Total water consumed (L)")
+    waterUsed: float = Field(description="Total water supplied to the crop (L)")
     waterRecovered: float = Field(description="Total water returned to the loop (L)")
+    waterDemand: float = Field(0.0, description="Total water a healthy canopy would have wanted (L)")
+    waterDeficit: float = Field(0.0, description="Total unmet demand (L)")
     co2Removed: float = Field(description="Total CO2 fixed by the crop (g)")
     estimatedOxygenProduced: float = Field(description="Total O2 released (g)")
     factors: GrowthFactors
@@ -170,10 +180,23 @@ class HarvestSummary(BaseModel):
     simulationDays: int
 
 
+class WaterBalance(BaseModel):
+    """Water loop totals for the space scenario, all in litres."""
+
+    demand: float = Field(description="What a healthy canopy would have wanted")
+    supplied: float = Field(description="What the system actually delivered (= used)")
+    deficit: float = Field(description="Unmet demand = demand - supplied")
+    recovered: float = Field(description="Supplied water captured again as condensate")
+    netConsumed: float = Field(description="Supplied - recovered: fresh make-up water needed")
+    recoveryEfficiency: float = Field(description="Assumed recovery fraction (constant)")
+    deficitPercent: float = Field(description="Deficit as % of demand")
+
+
 class LifeSupportContext(BaseModel):
     crewO2DaysSupported: float = Field(description="Person-days of O2 the produced oxygen covers")
     crewCo2DaysRemoved: float = Field(description="Person-days of exhaled CO2 the crop absorbed")
     waterRecoveryEfficiency: float
+    water: WaterBalance | None = None
 
 
 class SimulationResponse(BaseModel):

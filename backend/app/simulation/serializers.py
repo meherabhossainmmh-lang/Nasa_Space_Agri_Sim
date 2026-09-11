@@ -20,6 +20,7 @@ from app.models.simulation import (
     ScenarioSummary,
     SimulationRequest,
     SimulationResponse,
+    WaterBalance,
 )
 from app.simulation import gas_exchange
 from app.simulation.engine import ScenarioResult, SimulationResult
@@ -43,6 +44,8 @@ def _scenario_summary(scenario: ScenarioResult) -> ScenarioSummary:
         growthRate=_r(scenario.growth_rate_g_per_day, 2),
         waterUsed=_r(scenario.water_used_l, 2),
         waterRecovered=_r(scenario.water_recovered_l, 2),
+        waterDemand=_r(scenario.water_demand_l, 2),
+        waterDeficit=_r(scenario.water_deficit_l, 2),
         co2Removed=_r(scenario.co2_removed_g, 1),
         estimatedOxygenProduced=_r(scenario.o2_produced_g, 1),
         factors=GrowthFactors(**{k: _r(v, 4) for k, v in scenario.factors.items()}),
@@ -94,9 +97,26 @@ def _daily_water(scenario: ScenarioResult) -> list[DailyWaterEntry]:
             waterRecovered=_r(p.water_recovered_l, 3),
             cumulativeWaterUsed=_r(p.cumulative_water_used_l, 2),
             cumulativeWaterRecovered=_r(p.cumulative_water_recovered_l, 2),
+            waterDemand=_r(p.water_demand_l, 3),
+            waterDeficit=_r(p.water_deficit_l, 3),
+            cumulativeWaterDemand=_r(p.cumulative_water_demand_l, 2),
+            cumulativeWaterDeficit=_r(p.cumulative_water_deficit_l, 2),
         )
         for p in scenario.daily_water
     ]
+
+
+def _water_balance(scenario: ScenarioResult) -> WaterBalance:
+    demand = scenario.water_demand_l
+    return WaterBalance(
+        demand=_r(demand, 2),
+        supplied=_r(scenario.water_used_l, 2),
+        deficit=_r(scenario.water_deficit_l, 2),
+        recovered=_r(scenario.water_recovered_l, 2),
+        netConsumed=_r(scenario.water_used_l - scenario.water_recovered_l, 2),
+        recoveryEfficiency=constants.WATER_RECOVERY_EFFICIENCY,
+        deficitPercent=_r(100.0 * scenario.water_deficit_l / demand if demand > 0 else 0.0, 1),
+    )
 
 
 def _daily_life_support(scenario: ScenarioResult) -> list[DailyLifeSupportEntry]:
@@ -113,6 +133,10 @@ def _daily_life_support(scenario: ScenarioResult) -> list[DailyLifeSupportEntry]
                 cumulativeWaterRecovered=_r(w.cumulative_water_recovered_l, 2),
                 cumulativeCo2Removed=_r(g.cumulative_co2_removed_g, 1),
                 cumulativeO2Produced=_r(g.cumulative_o2_produced_g, 1),
+                waterDemand=_r(w.water_demand_l, 3),
+                waterDeficit=_r(w.water_deficit_l, 3),
+                cumulativeWaterDemand=_r(w.cumulative_water_demand_l, 2),
+                cumulativeWaterDeficit=_r(w.cumulative_water_deficit_l, 2),
             )
         )
     return entries
@@ -152,6 +176,7 @@ def to_response(result: SimulationResult, request: SimulationRequest) -> Simulat
             crewO2DaysSupported=_r(gas_exchange.crew_o2_days_supported(space.o2_produced_g), 2),
             crewCo2DaysRemoved=_r(gas_exchange.crew_co2_days_removed(space.co2_removed_g), 2),
             waterRecoveryEfficiency=constants.WATER_RECOVERY_EFFICIENCY,
+            water=_water_balance(space),
         ),
         dailyGrowthData=_daily_growth(result),
         dailyWaterData=_daily_water(space),

@@ -1,3 +1,4 @@
+import pytest
 BASE_REQUEST = {
     "crop": "lettuce",
     "gravity": 0.0,
@@ -110,3 +111,18 @@ def test_harvest_summary_separates_standing_and_harvested(client):
     assert harvest["harvestedYield"] > 0
     assert body["dailyGrowthData"][35]["isHarvestDay"] is True
     assert body["dailyGrowthData"][35]["spaceHarvested"] > 0
+
+
+def test_water_balance_reports_demand_supplied_deficit_and_recovered(client):
+    body = client.post("/api/simulate", json={"waterAvailability": 60}).json()
+    balance = body["lifeSupport"]["water"]
+    assert balance["demand"] == pytest.approx(balance["supplied"] + balance["deficit"], abs=0.05)
+    assert balance["deficitPercent"] == pytest.approx(40.0, abs=0.1)
+    assert balance["recovered"] == pytest.approx(0.9 * balance["supplied"], abs=0.05)
+    assert balance["netConsumed"] == pytest.approx(balance["supplied"] - balance["recovered"], abs=0.05)
+    assert body["space"]["waterDeficit"] == balance["deficit"]
+    # the old flat fields keep their meaning (supplied water)
+    assert body["waterUsed"] == balance["supplied"]
+    last = body["dailyLifeSupportData"][-1]
+    assert last["waterDemand"] > last["waterUsed"] > 0
+    assert last["cumulativeWaterDeficit"] == pytest.approx(balance["deficit"], abs=0.05)

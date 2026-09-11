@@ -44,3 +44,34 @@ def test_area_and_light_scale_usage():
     base = water.total_water_used_l(_run())
     assert water.total_water_used_l(_run(area=2.0)) == pytest.approx(2 * base)
     assert water.total_water_used_l(_run(light_scale=0.5)) == pytest.approx(0.5 * base)
+
+
+def test_full_availability_has_no_deficit():
+    pts = _run(100)
+    assert water.total_water_deficit_l(pts) == pytest.approx(0.0)
+    assert water.total_water_demand_l(pts) == pytest.approx(water.total_water_used_l(pts))
+
+
+def test_deficit_is_demand_minus_supplied():
+    pts = _run(60)
+    demand = water.total_water_demand_l(pts)
+    supplied = water.total_water_used_l(pts)
+    deficit = water.total_water_deficit_l(pts)
+    assert deficit == pytest.approx(demand - supplied)
+    assert deficit == pytest.approx(0.4 * demand)
+    for p in pts:
+        assert p.water_deficit_l == pytest.approx(p.water_demand_l - p.water_used_l)
+        assert p.water_deficit_l >= 0.0
+
+
+def test_demand_does_not_depend_on_availability():
+    # the shortage limits what is supplied, not what the canopy would want
+    assert water.total_water_demand_l(_run(100)) == pytest.approx(water.total_water_demand_l(_run(30)))
+
+
+def test_zero_availability_means_all_demand_is_deficit():
+    pts = _run(0)
+    assert water.total_water_used_l(pts) == pytest.approx(0.0)
+    assert water.total_water_recovered_l(pts) == pytest.approx(0.0)
+    assert water.total_water_deficit_l(pts) == pytest.approx(water.total_water_demand_l(pts))
+    assert water.total_water_deficit_l(pts) > 0

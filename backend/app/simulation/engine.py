@@ -58,6 +58,8 @@ class ScenarioResult:
     harvested_yield_g: float = 0.0  # whole cycles actually harvested
     standing_biomass_g: float = 0.0  # still growing, not yet harvested
     potential_harvest_g: float = 0.0  # what one full cycle yields under these conditions
+    water_demand_l: float = 0.0  # what a healthy canopy would have wanted
+    water_deficit_l: float = 0.0  # unmet demand (demand - supplied)
     daily_growth: list[growth.DailyGrowthPoint] = field(default_factory=list, repr=False)
     daily_water: list[water.DailyWaterPoint] = field(default_factory=list, repr=False)
     daily_gas: list[gas_exchange.DailyGasPoint] = field(default_factory=list, repr=False)
@@ -149,6 +151,8 @@ def _run_scenario(
         growth_rate_g_per_day=growth.average_growth_rate_g_per_day(daily_growth),
         water_used_l=water.total_water_used_l(daily_water),
         water_recovered_l=water.total_water_recovered_l(daily_water),
+        water_demand_l=water.total_water_demand_l(daily_water),
+        water_deficit_l=water.total_water_deficit_l(daily_water),
         co2_removed_g=gas_exchange.total_co2_removed_g(daily_gas),
         o2_produced_g=gas_exchange.total_o2_produced_g(daily_gas),
         daily_growth=daily_growth,
