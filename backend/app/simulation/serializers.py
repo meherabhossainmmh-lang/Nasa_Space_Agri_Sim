@@ -16,6 +16,8 @@ from app.models.simulation import (
     DailyWaterEntry,
     GrowthFactors,
     HarvestSummary,
+    ImpactFactor,
+    ImpactSummary,
     LifeSupportContext,
     ScenarioSummary,
     SimulationRequest,
@@ -69,6 +71,28 @@ def _daily_growth(result: SimulationResult) -> list[DailyGrowthEntry]:
             )
         )
     return entries
+
+
+def _impact_summary(result: SimulationResult) -> ImpactSummary:
+    breakdown = result.impact
+    return ImpactSummary(
+        factors=[
+            ImpactFactor(
+                key=step.key,
+                label=step.label,
+                spaceFactor=_r(step.space_factor, 4),
+                earthFactor=_r(step.earth_factor, 4),
+                percent=_r(step.percent, 1),
+                responsePercent=_r(step.response_percent, 1),
+                contributionPoints=_r(step.contribution_points, 1),
+                runningPercent=_r(step.running_percent, 1),
+            )
+            for step in breakdown.steps
+        ],
+        combinedPercent=_r(breakdown.combined_percent, 1),
+        limitingFactor=breakdown.limiting_factor,
+        boostingFactor=breakdown.boosting_factor,
+    )
 
 
 def _harvest_summary(result: SimulationResult) -> HarvestSummary:
@@ -170,6 +194,10 @@ def to_response(result: SimulationResult, request: SimulationRequest) -> Simulat
             differencePercent=_r(result.yield_difference_percent, 1),
             spaceGrowthPercentage=_r(result.space_growth_percentage, 1),
             earthComparisonMode=request.earthComparisonMode,
+            isDefined=result.comparison_defined,
+            # no decomposition when the Earth reference produced nothing:
+            # the percentages would describe a gap that does not exist
+            impact=_impact_summary(result) if result.comparison_defined else None,
         ),
         harvest=_harvest_summary(result),
         lifeSupport=LifeSupportContext(

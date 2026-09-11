@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from app.config import simulation_constants as constants
-from app.simulation import factors, gas_exchange, growth, water
+from app.simulation import factors, gas_exchange, growth, impact, water
 from app.simulation.crops import CropProfile, get_crop
 
 
@@ -74,10 +74,21 @@ class SimulationResult:
 
     # -- comparison helpers --------------------------------------------------
     @property
+    def comparison_defined(self) -> bool:
+        """False when the Earth reference produced nothing (e.g. no water or no light)."""
+        return self.earth.crop_yield_g > 0
+
+    @property
     def space_growth_percentage(self) -> float:
-        """Space yield as a percentage of the Earth yield (100 = identical)."""
-        if self.earth.crop_yield_g <= 0:
-            return 0.0
+        """
+        Space yield as a percentage of the Earth yield (100 = identical).
+
+        When the Earth reference is zero the ratio is undefined; both runs
+        producing nothing is reported as "identical" (100) so the UI does not
+        show a meaningless -100 %.
+        """
+        if not self.comparison_defined:
+            return 100.0 if self.space.crop_yield_g <= 0 else 0.0
         return 100.0 * self.space.crop_yield_g / self.earth.crop_yield_g
 
     @property
@@ -106,6 +117,11 @@ class SimulationResult:
     @property
     def harvest_within_window(self) -> bool:
         return self.cycles_completed > 0
+
+    @property
+    def impact(self) -> impact.ImpactBreakdown:
+        """Per-driver decomposition of the Earth-vs-space yield difference."""
+        return impact.decompose_impact(self.space.factors, self.earth.factors)
 
 
 # ---------------------------------------------------------------------------

@@ -141,6 +141,26 @@ class ScenarioSummary(BaseModel):
     factors: GrowthFactors
 
 
+class ImpactFactor(BaseModel):
+    key: str
+    label: str
+    spaceFactor: float
+    earthFactor: float
+    percent: float = Field(description="Driver's own effect vs the Earth run for the same driver (%)")
+    responsePercent: float = Field(description="Driver's effect vs the crop's reference conditions (%)")
+    contributionPoints: float = Field(description="Percentage points of the final gap this driver explains")
+    runningPercent: float = Field(description="Yield as % of Earth after this and all earlier drivers")
+
+
+class ImpactSummary(BaseModel):
+    """Waterfall from the Earth reference (100 %) to the space yield."""
+
+    factors: list[ImpactFactor]
+    combinedPercent: float = Field(description="Sum of the contributions = signed yield difference (%)")
+    limitingFactor: str | None = Field(description="Driver with the largest negative contribution")
+    boostingFactor: str | None = Field(description="Driver with the largest positive contribution")
+
+
 class ComparisonSummary(BaseModel):
     earthYield: float
     spaceYield: float
@@ -148,6 +168,8 @@ class ComparisonSummary(BaseModel):
     differencePercent: float = Field(description="Signed, e.g. -16 means space yields 16 % less")
     spaceGrowthPercentage: float = Field(description="Space yield as % of Earth yield")
     earthComparisonMode: Literal["matched", "baseline"]
+    isDefined: bool = Field(True, description="False when the Earth reference produced no biomass")
+    impact: ImpactSummary | None = None
 
 
 class CropSummary(BaseModel):

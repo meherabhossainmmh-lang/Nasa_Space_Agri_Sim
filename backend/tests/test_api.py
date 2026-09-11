@@ -1,4 +1,5 @@
 import pytest
+
 BASE_REQUEST = {
     "crop": "lettuce",
     "gravity": 0.0,
@@ -126,3 +127,19 @@ def test_water_balance_reports_demand_supplied_deficit_and_recovered(client):
     last = body["dailyLifeSupportData"][-1]
     assert last["waterDemand"] > last["waterUsed"] > 0
     assert last["cumulativeWaterDeficit"] == pytest.approx(balance["deficit"], abs=0.05)
+
+
+def test_comparison_includes_impact_breakdown(client):
+    body = client.post("/api/simulate", json=BASE_REQUEST).json()
+    comparison = body["comparison"]
+    assert comparison["isDefined"] is True
+    impact = comparison["impact"]
+    assert [f["key"] for f in impact["factors"]] == ["gravity", "radiation", "water", "light", "co2"]
+    assert impact["combinedPercent"] == pytest.approx(comparison["differencePercent"], abs=0.15)
+    assert sum(f["contributionPoints"] for f in impact["factors"]) == pytest.approx(impact["combinedPercent"], abs=0.3)
+    assert impact["limitingFactor"] == "gravity"
+
+    dry = client.post("/api/simulate", json={**BASE_REQUEST, "waterAvailability": 0}).json()
+    assert dry["comparison"]["isDefined"] is False
+    assert dry["comparison"]["impact"] is None
+    assert dry["cropYield"] == 0.0
