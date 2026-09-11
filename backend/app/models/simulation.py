@@ -259,6 +259,7 @@ class ParameterRange(BaseModel):
 class Preset(BaseModel):
     label: str
     value: float
+    description: str = ""
 
 
 class ModelAssumption(BaseModel):
@@ -286,6 +287,7 @@ class SimulationConfigResponse(BaseModel):
     durationOptions: list[int]
     gravityPresets: list[Preset]
     radiationPresets: list[Preset]
+    presetNote: str = ""
     disclaimer: str
     assumptions: list[ModelAssumption] = []
     modelStatus: ModelStatus | None = None

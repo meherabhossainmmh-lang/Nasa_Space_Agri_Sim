@@ -58,6 +58,7 @@ def simulation_config() -> SimulationConfigResponse:
         durationOptions=constants.SIMULATION_DURATION_OPTIONS,
         gravityPresets=constants.GRAVITY_PRESETS,
         radiationPresets=constants.RADIATION_PRESETS,
+        presetNote=constants.PRESET_NOTE,
         disclaimer=PHASE_1_DISCLAIMER,
         assumptions=describe_assumptions(),
         modelStatus=MODEL_STATUS,

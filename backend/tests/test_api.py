@@ -157,3 +157,16 @@ def test_config_describes_the_model_assumptions(client):
     alone = client.get("/api/assumptions")
     assert alone.status_code == 200
     assert alone.json()["assumptions"] == body["assumptions"]
+
+
+def test_presets_are_labelled_as_scenarios(client):
+    body = client.get("/api/config").json()
+    assert [p["label"] for p in body["gravityPresets"]] == ["Microgravity", "Moon-like", "Mars-like", "Earth-like"]
+    assert [p["label"] for p in body["radiationPresets"]] == [
+        "Earth surface-like",
+        "Mars-like",
+        "ISS-like",
+        "Deep-space-like",
+    ]
+    assert all(p["description"] for p in body["gravityPresets"] + body["radiationPresets"])
+    assert "Phase 1" in body["presetNote"]

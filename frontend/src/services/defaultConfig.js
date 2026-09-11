@@ -25,17 +25,20 @@ export const DEFAULT_CONFIG = {
   },
   durationOptions: [7, 14, 30, 60, 90],
   gravityPresets: [
-    { label: 'Microgravity', value: 0 },
-    { label: 'Moon', value: 0.16 },
-    { label: 'Mars', value: 0.38 },
-    { label: 'Earth', value: 1 },
+    { label: 'Microgravity', value: 0, description: 'Free fall, e.g. an orbiting station' },
+    { label: 'Moon-like', value: 0.16, description: 'About one sixth of Earth gravity' },
+    { label: 'Mars-like', value: 0.38, description: 'About 38 % of Earth gravity' },
+    { label: 'Earth-like', value: 1, description: 'Earth surface reference' },
   ],
   radiationPresets: [
-    { label: 'Earth surface', value: 0.01 },
-    { label: 'Mars surface', value: 0.2 },
-    { label: 'ISS orbit', value: 0.3 },
-    { label: 'Deep space', value: 0.5 },
+    { label: 'Earth surface-like', value: 0.01, description: 'Natural background dose rate' },
+    { label: 'Mars-like', value: 0.2, description: 'Order of magnitude of the Martian surface' },
+    { label: 'ISS-like', value: 0.3, description: 'Order of magnitude of low Earth orbit' },
+    { label: 'Deep-space-like', value: 0.5, description: "Beyond Earth's magnetic shielding" },
   ],
+  presetNote: 'Preset values are rounded Phase 1 reference points, not measured mission data.',
+  assumptions: [],
+  modelStatus: null,
 }
 
 /** Build the initial parameter set from a config object. */
