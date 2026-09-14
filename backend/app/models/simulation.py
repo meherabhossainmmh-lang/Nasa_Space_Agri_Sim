@@ -96,6 +96,8 @@ class DailyGrowthEntry(BaseModel):
     earthHarvested: float = Field(0.0, description="Harvested so far on Earth (g)")
     spaceHarvested: float = Field(0.0, description="Harvested so far in space (g)")
     isHarvestDay: bool = Field(False, description="The crop is harvested at the end of this day")
+    dayInCycle: int = Field(0, description="Day within the current crop cycle (0 = planting)")
+    growthFraction: float = Field(0.0, description="Position on the logistic curve, 0..1, same for both runs")
 
 
 class DailyWaterEntry(BaseModel):

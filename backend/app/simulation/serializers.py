@@ -68,6 +68,8 @@ def _daily_growth(result: SimulationResult) -> list[DailyGrowthEntry]:
                 earthHarvested=_r(earth.harvested_g, 1),
                 spaceHarvested=_r(space.harvested_g, 1),
                 isHarvestDay=space.is_harvest_day,
+                dayInCycle=space.day_in_cycle,
+                growthFraction=_r(space.growth_fraction, 4),
             )
         )
     return entries

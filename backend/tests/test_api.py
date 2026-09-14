@@ -170,3 +170,11 @@ def test_presets_are_labelled_as_scenarios(client):
     ]
     assert all(p["description"] for p in body["gravityPresets"] + body["radiationPresets"])
     assert "Phase 1" in body["presetNote"]
+
+
+def test_daily_growth_carries_cycle_position(client):
+    body = client.post("/api/simulate", json={"crop": "lettuce", "simulationDays": 36}).json()
+    rows = body["dailyGrowthData"]
+    assert rows[0]["growthFraction"] == 0.0 and rows[0]["dayInCycle"] == 0
+    assert rows[35]["growthFraction"] == pytest.approx(1.0) and rows[35]["dayInCycle"] == 35
+    assert rows[36]["dayInCycle"] == 1 and rows[36]["growthFraction"] < 0.05
