@@ -14,25 +14,24 @@ function generateStars(count, seed = 42) {
     id: i,
     x: rand() * 100,
     y: rand() * 100,
-    r: 0.4 + rand() * 1.1,
-    o: 0.25 + rand() * 0.6,
+    r: 0.3 + rand() * 0.9,
+    o: 0.15 + rand() * 0.45,
   }))
 }
 
 /**
- * Decorative background: a few dozen tiny stars plus a soft nebula glow.
- * Pure CSS/SVG, no external assets, fixed behind the content.
+ * Decorative background: a sparse star field over a deep-space gradient.
+ * Pure CSS/SVG, fixed behind the content, intentionally subtle.
  */
-export default function Starfield({ count = 90 }) {
+export default function Starfield({ count = 110 }) {
   const stars = useMemo(() => generateStars(count), [count])
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute -left-40 top-[-10%] h-[45rem] w-[45rem] rounded-full bg-neon-cyan/10 blur-[140px]" />
-      <div className="absolute -right-40 bottom-[-20%] h-[40rem] w-[40rem] rounded-full bg-neon-purple/10 blur-[140px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,40,70,0.55),rgba(4,7,15,0)_55%),radial-gradient(ellipse_at_bottom_right,rgba(16,50,60,0.35),rgba(4,7,15,0)_50%)]" />
       <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
         {stars.map((s) => (
-          <circle key={s.id} cx={`${s.x}%`} cy={`${s.y}%`} r={s.r} fill="#e2e8f0" opacity={s.o} />
+          <circle key={s.id} cx={`${s.x}%`} cy={`${s.y}%`} r={s.r} fill="#dbe4f0" opacity={s.o} />
         ))}
       </svg>
     </div>

@@ -1,44 +1,33 @@
 /**
- * Single KPI tile. `tone` picks the accent colour, `delta` is an optional
- * secondary line (e.g. "-16% vs Earth").
+ * Compact KPI tile. `tone` colours the value; `note` is the small line under
+ * it. Kept deliberately flat: thin border, no glow, mono numbers.
  */
 const TONES = {
-  green: { text: 'text-neon-green', glow: 'from-neon-green/20', ring: 'group-hover:border-neon-green/50' },
-  blue: { text: 'text-neon-blue', glow: 'from-neon-blue/20', ring: 'group-hover:border-neon-blue/50' },
-  cyan: { text: 'text-neon-cyan', glow: 'from-neon-cyan/20', ring: 'group-hover:border-neon-cyan/50' },
-  purple: { text: 'text-neon-purple', glow: 'from-neon-purple/20', ring: 'group-hover:border-neon-purple/50' },
-  amber: { text: 'text-neon-amber', glow: 'from-neon-amber/20', ring: 'group-hover:border-neon-amber/50' },
-  rose: { text: 'text-neon-rose', glow: 'from-neon-rose/20', ring: 'group-hover:border-neon-rose/50' },
+  neutral: 'text-slate-100',
+  accent: 'text-accent',
+  growth: 'text-growth',
+  water: 'text-water',
+  warn: 'text-warn',
+  danger: 'text-danger',
+  co2: 'text-co2',
+  o2: 'text-o2',
+  muted: 'text-slate-400',
 }
 
-export default function MetricCard({ icon, label, value, unit, delta, deltaTone, hint, tone = 'cyan', isLoading }) {
-  const t = TONES[tone] ?? TONES.cyan
-  const deltaColor =
-    deltaTone === 'good' ? 'text-neon-green' : deltaTone === 'bad' ? 'text-neon-rose' : 'text-slate-400'
-
+export default function MetricCard({ label, value, unit, note, noteTone = 'muted', tone = 'neutral', isLoading, title, size = 'md' }) {
+  const valueSize = size === 'lg' ? 'text-2xl sm:text-3xl' : size === 'sm' ? 'text-base' : 'text-xl'
   return (
     <article
-      className={`group relative overflow-hidden rounded-2xl border border-space-700/70 bg-space-900/70 p-4 transition ${t.ring}`}
+      className="min-w-0 rounded-md border border-line bg-space-800/50 px-3 py-2.5"
       aria-busy={isLoading || undefined}
+      title={title}
     >
-      <div className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${t.glow} to-transparent blur-2xl`} />
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
-        <span className="text-lg" aria-hidden="true">
-          {icon}
-        </span>
-      </div>
-      <div className={`mt-2 flex items-baseline gap-1 transition-opacity ${isLoading ? 'opacity-60' : ''}`}>
-        <span className={`font-mono text-2xl font-semibold tabular-nums ${t.text}`}>{value}</span>
-        {unit && <span className="text-xs text-slate-400">{unit}</span>}
-      </div>
-      {(delta || hint) && (
-        <p className="mt-1 text-xs">
-          {delta && <span className={`font-medium ${deltaColor}`}>{delta}</span>}
-          {delta && hint && <span className="text-slate-500"> · </span>}
-          {hint && <span className="text-slate-500">{hint}</span>}
-        </p>
-      )}
+      <p className="label-tech truncate">{label}</p>
+      <p className={`mt-1 flex items-baseline gap-1 transition-opacity ${isLoading ? 'opacity-60' : ''}`}>
+        <span className={`font-mono font-semibold tabular-nums ${valueSize} ${TONES[tone] ?? TONES.neutral}`}>{value}</span>
+        {unit && <span className="text-[11px] text-slate-500">{unit}</span>}
+      </p>
+      {note && <p className={`mt-0.5 truncate text-[11px] ${TONES[noteTone] ?? TONES.muted}`}>{note}</p>}
     </article>
   )
 }
