@@ -11,9 +11,11 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@react-three/fiber": "^9.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
