@@ -103,7 +103,7 @@ export default function MetricSummary({ result, isLoading }) {
           <HarvestCell
             label="Potential harvest"
             value={r ? formatMass(harvest.potentialHarvest) : '–'}
-            note={r ? `per ${harvest.cycleLengthDays}-day cycle under these conditions` : ''}
+            note={r ? `one ${harvest.cycleLengthDays}-day cycle, these conditions` : ''}
             tone="text-slate-100"
             isLoading={isLoading}
           />
@@ -139,11 +139,11 @@ export default function MetricSummary({ result, isLoading }) {
         />
         <MetricCard
           size="sm"
-          label="Est. water recovery"
+          label="Water recovered"
           tone="accent"
           value={r ? formatVolume(water.recovered) : '–'}
-          note={r ? `${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed recovery` : undefined}
-          title="Share of the supplied water captured again as condensate (assumed closed-loop efficiency)"
+          note={r ? `est. · ${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed recovery` : undefined}
+          title="Estimated water recovery: share of the supplied water captured again as condensate (assumed closed-loop efficiency)"
           isLoading={isLoading}
         />
         <MetricCard
@@ -151,7 +151,7 @@ export default function MetricSummary({ result, isLoading }) {
           label="Est. CO₂ removal"
           tone="co2"
           value={r ? formatMass(r.co2Removed) : '–'}
-          note={r ? `≈ ${formatNumber(r.lifeSupport.crewCo2DaysRemoved, 1)} crew-days CO₂ equivalent` : undefined}
+          note={r ? `≈ ${formatNumber(r.lifeSupport.crewCo2DaysRemoved, 1)} crew-days CO₂ eq.` : undefined}
           title="Equivalent reference only; crew metabolism and full atmospheric balance are not modeled."
           isLoading={isLoading}
         />
@@ -160,7 +160,7 @@ export default function MetricSummary({ result, isLoading }) {
           label="O₂ production"
           tone="o2"
           value={r ? formatMass(r.estimatedOxygenProduced) : '–'}
-          note={r ? `≈ ${formatNumber(r.lifeSupport.crewO2DaysSupported, 1)} crew-days O₂ equivalent` : undefined}
+          note={r ? `≈ ${formatNumber(r.lifeSupport.crewO2DaysSupported, 1)} crew-days O₂ eq.` : undefined}
           title="Equivalent reference only; crew metabolism and full atmospheric balance are not modeled."
           isLoading={isLoading}
         />

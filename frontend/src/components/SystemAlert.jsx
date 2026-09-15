@@ -5,7 +5,9 @@
  */
 export default function SystemAlert({ error, onRetry }) {
   const invalid = error?.status === 422
-  const fields = invalid && error.details?.fields ? Object.entries(error.details.fields) : []
+  const allFields = invalid && error.details?.fields ? Object.entries(error.details.fields) : []
+  // the flat message already repeats a single field, so only list them when there are several
+  const fields = allFields.length > 1 ? allFields : []
   const tone = invalid
     ? { border: 'border-warn/50', bg: 'bg-warn/5', text: 'text-warn', dot: 'bg-warn' }
     : { border: 'border-danger/50', bg: 'bg-danger/5', text: 'text-danger', dot: 'bg-danger' }

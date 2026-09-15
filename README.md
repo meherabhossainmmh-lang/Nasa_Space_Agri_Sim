@@ -1,12 +1,13 @@
-# SpaceAgriSim 🌱🛰️
+# SpaceAgriSim
 
-**Space Agriculture & Life Support Simulator — Phase 1**
+**Space Agriculture & Life Support Digital Twin — Phase 1 · Mathematical prototype**
 
-An interactive simulator that models how space and environmental conditions
+An interactive dashboard that models how space and environmental conditions
 (gravity, radiation, water, light, CO₂) affect crop growth and the life‑support
-metrics that come with it: water use, water recovery, CO₂ removal and O₂
-production. Pick a crop, drag a slider, and every metric and chart updates
-immediately — for both an Earth reference and your space scenario.
+metrics that come with it: water demand and deficit, water recovery, CO₂
+removal and O₂ production. Pick a crop, drag a slider, and every number, chart
+and the 3D growth chamber update immediately — for both an Earth reference and
+your space scenario, with the difference broken down driver by driver.
 
 > **Phase 1 is a mathematical simulation prototype.**
 > All numbers come from clearly documented simulation assumptions. NASA
@@ -41,17 +42,29 @@ calories: plants also recycle water through transpiration, scrub CO₂ from the
 cabin and release oxygen, so a crop module is a life‑support component.
 
 Phase 1 proves the core loop: a parameter‑driven simulation engine behind a
-clean API, and a dashboard that makes the trade‑offs visible in real time.
+clean API, and a dashboard that makes the trade‑offs visible in real time —
+including a first, output‑driven 3D view of the growth chamber. The word
+“digital twin” describes the direction of the project; the current model is a
+transparent mathematical prototype, not a calibrated or validated twin.
 
 ## 2. Phase 1 scope
 
 **In scope**
 
 - A transparent, parameter‑driven simulation engine (Python)
-- REST API (`POST /api/simulate`, `GET /api/crops`, `GET /api/config`)
-- A single‑page futuristic dashboard with live controls, metric cards and charts
-- Earth‑vs‑space comparison
-- Input validation and error handling
+- REST API (`POST /api/simulate`, `GET /api/crops`, `GET /api/config`,
+  `GET /api/assumptions`)
+- A single‑page mission‑control dashboard: grouped mission controls, mission
+  snapshot, Earth‑vs‑space impact breakdown, generated mission insight and
+  what‑if comparison, growth and life‑support charts, mission timeline
+- A 3D **Space Growth Chamber** digital‑twin view (Three.js / React Three
+  Fiber) that visualises the simulation outputs — optional, lazy‑loaded, with
+  a 2D fallback when WebGL is unavailable
+- Explicit separation of **standing biomass**, **harvested yield**,
+  **cumulative harvest**, **next harvest** and **potential harvest**
+- Water loop semantics: **demand / supplied / deficit / recovered**
+- Model assumptions and model status reported by the backend itself
+- Input validation, error handling, responsive layout, keyboard access
 - Unit + API tests for the engine
 
 **Explicitly out of scope (later phases)**
@@ -66,34 +79,78 @@ clean API, and a dashboard that makes the trade‑offs visible in real time.
 | Control | Range | Default |
 | --- | --- | --- |
 | Crop | Lettuce · Tomato · Radish | Lettuce |
-| Gravity | 0 – 2 g (presets: microgravity, Moon, Mars, Earth) | 0 g |
-| Radiation | 0 – 3 mGy/day (presets: Earth, Mars, ISS orbit, deep space) | 0.3 |
+| Gravity | 0 – 2 g (scenarios: Microgravity, Moon‑like, Mars‑like, Earth‑like) | 0 g |
+| Radiation | 0 – 3 mGy/day (scenarios: Earth surface‑like, Mars‑like, ISS‑like, Deep‑space‑like) | 0.3 |
 | Water availability | 0 – 100 % | 100 % |
 | Light | 0 – 24 h/day | 16 h |
 | CO₂ level | 300 – 3000 ppm | 1000 ppm |
 | Growing area | 0.1 – 100 m² | 10 m² |
 | Simulation duration | 7 · 14 · 30 · 60 · 90 days | 30 days |
 
-For every change the dashboard shows:
+Scenario presets are rounded Phase 1 reference points (hence the “‑like”
+labels), not measured mission data — the UI says so in a tooltip.
 
-- **Metric cards** — 🌱 crop yield, 💧 water used, ♻️ water recovered,
-  💨 CO₂ removed, 🫧 estimated O₂ produced, 🌍 space‑vs‑Earth growth
-- **Earth vs space panel** — Earth yield, space yield, signed difference in %
-  and grams, and the individual growth factors that explain the gap
-- **Crop growth chart** — Earth and space biomass curves over the simulated
-  days (standing biomass or cumulative yield, harvest markers when a run spans
-  more than one crop cycle)
-- **Life support chart** — water used / recovered (L) and CO₂ removed /
-  O₂ produced (g), per day or cumulative
+For every change the dashboard shows, top to bottom:
+
+1. **Mission overview** — CROP / ENVIRONMENT / RADIATION / DURATION summary.
+2. **Mission snapshot** — the primary biomass figure with its Earth ratio
+   (e.g. `18.3 kg · 79 % of Earth reference · −20.9 %`), then **harvested
+   yield**, **cumulative harvest**, **next harvest (day)** and **potential
+   harvest**, then the secondary water‑loop and atmosphere metrics.
+3. **Why is space different?** — Earth vs space yield bars and a per‑driver
+   impact breakdown (gravity, radiation, water, light, CO₂ → combined).
+4. **Mission insight** — a summary sentence generated from the outputs, plus a
+   *what changed?* table: pin the current scenario as a baseline, change one
+   parameter, and see the biomass / O₂ / CO₂ / water‑deficit deltas.
+5. **Crop growth** — Earth and space curves (standing biomass, harvested yield
+   or total produced), harvest markers, end‑of‑window marker, and a mission
+   timeline (planting → harvests → simulation end → next harvest).
+6. **Life support** — a **water loop** chart (demand / supplied / deficit /
+   recovered) and a separate **atmosphere** chart (CO₂ removed / O₂ produced),
+   per day or cumulative, each on a single axis.
+7. **Space growth chamber** — the 3D digital‑twin view (toggle ON/OFF).
+8. **Model assumptions** — collapsible formulas and constants, and the
+   **model status** block (Phase 1 · not NASA‑validated · GeneLab/OSDR planned).
 
 Example behaviour (defaults, lettuce, 30 days, 10 m²):
 
 ```
 Earth: 23.1 kg   Space: 18.3 kg   Difference: -20.9 %
+Gravity −15 % · Radiation −7 % · Water 0 % · Light 0 % · CO₂ 0 % (shared) → combined −20.9 %
+Harvest: NO HARVEST WITHIN SIMULATION WINDOW — simulation ends Day 30, lettuce harvest cycle Day 35
 ```
 
-Raising radiation lowers growth, yield, CO₂ removal and O₂; cutting water
-availability by 5 % lowers yield by 5 % and reduces water used / recovered.
+Raising radiation lowers growth, biomass, CO₂ removal and O₂; cutting water
+availability by 5 % lowers biomass by 5 % and turns the missing 5 % of demand
+into a reported water deficit.
+
+### Biomass vs harvest — how to read the numbers
+
+| Term | Meaning |
+| --- | --- |
+| **Standing biomass** | Edible biomass growing in the chamber at the end of the window, not yet harvested |
+| **Harvested yield** | Biomass of the most recent completed harvest (0 if no cycle finished) |
+| **Cumulative harvest** | All harvests inside the window added up |
+| **Total biomass produced** (`cropYield`) | Standing + cumulative harvest |
+| **Next harvest** | First harvest day after the window ends |
+| **Potential harvest** | What one full cycle yields under the space conditions |
+
+A 30‑day lettuce run has 18.3 kg of standing biomass and **0 g harvested**,
+because the 35‑day cycle is not finished. The dashboard never presents
+unharvested biomass as a harvest.
+
+### Water loop — how to read the numbers
+
+| Term | Meaning |
+| --- | --- |
+| **Demand** | What a healthy canopy would want (grows with the canopy and the photoperiod) |
+| **Supplied** | What the system actually delivers = demand × availability (the legacy `waterUsed` field) |
+| **Deficit** | Unmet demand = demand − supplied; the shortage already limits growth through the water factor |
+| **Est. water recovery** | Supplied × 90 % assumed closed‑loop recovery efficiency |
+| **Net consumed** | Supplied − recovered = fresh make‑up water |
+
+CO₂ / O₂ crew‑day figures are an *equivalent reference only*; crew metabolism
+and the full atmospheric balance are not modelled.
 
 ## 4. How the simulation works
 
@@ -125,8 +182,11 @@ the growth factor and the growing area:
 biomass(day) = harvestBiomass × growthFactor × area × logistic(day / cycleLength)
 ```
 
-If the run is longer than one cycle the crop is harvested and replanted;
-`cumulative` biomass keeps counting across harvests.
+If the run is longer than one cycle the crop is harvested and replanted.
+Each daily point carries the **standing** biomass, the **harvested** total so
+far and the **cumulative** (standing + harvested) total, plus a harvest‑day
+flag; the engine also reports harvest days, the next harvest day and the
+potential harvest of one full cycle.
 
 ### 4.3 Water (`water.py`)
 
@@ -135,8 +195,9 @@ canopy), scales with the light factor, and is cut by the water shortage:
 
 ```
 demand(day)    = peakWaterPerDay × area × lightFactor × (0.15 + 0.85 × growthFraction)
-used(day)      = demand(day) × waterAvailability / 100
-recovered(day) = used(day) × 0.90          # condensate recovery efficiency
+supplied(day)  = demand(day) × waterAvailability / 100      # = "used" by the crop
+deficit(day)   = demand(day) − supplied(day)                # unmet demand
+recovered(day) = supplied(day) × 0.90                        # assumed condensate recovery
 ```
 
 ### 4.4 CO₂ and O₂ (`gas_exchange.py`)
@@ -163,7 +224,21 @@ spaceGrowthPercentage = 100 × spaceYield / earthYield
 differencePercent     = spaceGrowthPercentage − 100
 ```
 
-### 4.6 Crop baselines (assumptions, per m²)
+When the Earth reference produces nothing (e.g. 0 % water) the comparison is
+flagged `isDefined: false` instead of showing a meaningless −100 %.
+
+### 4.6 Impact breakdown (`impact.py`)
+
+Because growth is linear in the combined factor and the combined factor is a
+product, the space/Earth ratio is the product of per‑driver ratios. The engine
+unpacks it into a waterfall: start at 100 %, apply gravity → radiation → water
+→ light → CO₂ one at a time and record how many percentage points each step
+adds or removes. The contributions add up exactly to the combined difference.
+In *matched* mode the resources are identical in both runs, so they contribute
+0 points; their absolute response (e.g. CO₂ +18 %) is still reported as
+`responsePercent`.
+
+### 4.7 Crop baselines (assumptions, per m²)
 
 | Crop | Cycle | Edible biomass | Peak water | Optimal light | Radiation / µg sensitivity |
 | --- | --- | --- | --- | --- | --- |
@@ -185,13 +260,15 @@ differencePercent     = spaceGrowthPercentage − 100
 - O₂/CO₂ follow textbook stoichiometry with a fixed carbon fraction; respiration,
   root‑zone gas exchange and the crew's own balance are not modelled.
 - Temperature, humidity, nutrients, pressure and plant stress are not inputs yet.
+- The 3D growth chamber is a visualisation of the simulation outputs only; it
+  has no physics or model of its own.
 - Nothing here has been validated against experimental space‑grown crop data.
 
 ## 6. Technology stack
 
 | Layer | Tech |
 | --- | --- |
-| Frontend | React 19, Vite 7, Tailwind CSS 4, Recharts 3 |
+| Frontend | React 19, Vite 7, Tailwind CSS 4, Recharts 3, Three.js + React Three Fiber (lazy‑loaded 3D view) |
 | Backend | Python 3.11+, FastAPI, Pydantic v2, Uvicorn |
 | Tests | pytest (engine + API) |
 | Tooling | npm, pip, Git |
@@ -207,10 +284,14 @@ SpaceAgriSim/
 │       ├── App.jsx
 │       ├── main.jsx
 │       ├── pages/DashboardPage.jsx
-│       ├── components/         # controls, metric cards, panels, header/footer
-│       ├── charts/             # GrowthChart, LifeSupportChart, chartTheme
+│       ├── components/         # MissionHeader, SystemStatus, MissionOverview, MissionControls,
+│       │                       # ScenarioSelector, MetricSummary, EarthSpaceComparison, ImpactBreakdown,
+│       │                       # MissionInsight, GrowthPanel, MissionTimeline, LifeSupportPanel,
+│       │                       # DigitalTwin3D, ModelAssumptions, SystemAlert, Panel, ...
+│       ├── charts/             # GrowthChart, LifeSupportChart (water loop + atmosphere), chartTheme
+│       ├── three/              # GrowthChamberScene (react-three-fiber, lazy-loaded)
 │       ├── hooks/              # useSimulation, useSimulationParams, useSimulationConfig
-│       ├── services/           # simulationApi, formatters, validation, defaultConfig
+│       ├── services/           # simulationApi, formatters, validation, defaultConfig, insights, twinState
 │       └── styles/index.css    # Tailwind + design tokens
 ├── backend/
 │   ├── requirements.txt
@@ -218,7 +299,8 @@ SpaceAgriSim/
 │   │   ├── main.py             # FastAPI app
 │   │   ├── routes/             # health, simulation, error handlers
 │   │   ├── models/             # Pydantic request/response schemas
-│   │   ├── simulation/         # crops, factors, growth, water, gas_exchange, engine, serializers
+│   │   ├── simulation/         # crops, factors, growth, water, gas_exchange, impact, engine,
+│   │   │                       # model_description, serializers
 │   │   └── config/             # settings + simulation_constants (all assumptions)
 │   └── tests/                  # pytest suite
 ├── .gitignore
@@ -303,15 +385,33 @@ Abridged response:
     "differenceGrams": -4839.9,
     "differencePercent": -20.9,
     "spaceGrowthPercentage": 79.1,
-    "earthComparisonMode": "matched"
+    "earthComparisonMode": "matched",
+    "isDefined": true,
+    "impact": {
+      "factors": [
+        { "key": "gravity", "percent": -15.0, "responsePercent": -15.0, "contributionPoints": -15.0, "runningPercent": 85.0 },
+        { "key": "radiation", "percent": -7.0, "contributionPoints": -5.9, "runningPercent": 79.1 },
+        { "key": "co2", "percent": 0.0, "responsePercent": 18.0, "contributionPoints": 0.0, "runningPercent": 79.1 }
+      ],
+      "combinedPercent": -20.9, "limitingFactor": "gravity", "boostingFactor": null
+    }
   },
-  "lifeSupport": { "crewO2DaysSupported": 1.35, "crewCo2DaysRemoved": 1.56, "waterRecoveryEfficiency": 0.9 },
+  "harvest": {
+    "standingBiomass": 18268.5, "harvestedYield": 0.0, "lastHarvestYield": 0.0, "lastHarvestDay": null,
+    "cumulativeBiomass": 18268.5, "potentialHarvest": 18659.1,
+    "cycleLengthDays": 35, "cyclesCompleted": 0, "harvestDays": [],
+    "nextHarvestDay": 35, "daysUntilNextHarvest": 5, "harvestWithinWindow": false, "simulationDays": 30
+  },
+  "lifeSupport": {
+    "crewO2DaysSupported": 1.35, "crewCo2DaysRemoved": 1.56, "waterRecoveryEfficiency": 0.9,
+    "water": { "demand": 389.4, "supplied": 389.4, "deficit": 0.0, "recovered": 350.46, "netConsumed": 38.94, "recoveryEfficiency": 0.9, "deficitPercent": 0.0 }
+  },
   "dailyGrowthData": [
-    { "day": 0, "cycle": 1, "earthBiomass": 0.0, "spaceBiomass": 0.0, "earthCumulative": 0.0, "spaceCumulative": 0.0 },
-    { "day": 1, "cycle": 1, "earthBiomass": 52.5, "spaceBiomass": 41.5, "earthCumulative": 52.5, "spaceCumulative": 41.5 }
+    { "day": 1, "cycle": 1, "earthBiomass": 52.5, "spaceBiomass": 41.5, "earthCumulative": 52.5, "spaceCumulative": 41.5,
+      "earthHarvested": 0.0, "spaceHarvested": 0.0, "isHarvestDay": false, "dayInCycle": 1, "growthFraction": 0.0022 }
   ],
-  "dailyWaterData": [ { "day": 1, "waterUsed": 3.797, "waterRecovered": 3.418, "cumulativeWaterUsed": 3.8, "cumulativeWaterRecovered": 3.42 } ],
-  "dailyLifeSupportData": [ { "day": 1, "waterUsed": 3.797, "waterRecovered": 3.418, "co2Removed": 3.55, "o2Produced": 2.58, "cumulativeCo2Removed": 3.5, "cumulativeO2Produced": 2.6 } ],
+  "dailyWaterData": [ { "day": 1, "waterUsed": 3.797, "waterRecovered": 3.418, "waterDemand": 3.797, "waterDeficit": 0.0, "cumulativeWaterUsed": 3.8, "cumulativeWaterRecovered": 3.42, "cumulativeWaterDemand": 3.8, "cumulativeWaterDeficit": 0.0 } ],
+  "dailyLifeSupportData": [ { "day": 1, "waterUsed": 3.797, "waterRecovered": 3.418, "waterDemand": 3.797, "waterDeficit": 0.0, "co2Removed": 3.55, "o2Produced": 2.58, "cumulativeCo2Removed": 3.5, "cumulativeO2Produced": 2.6 } ],
   "disclaimer": "Phase 1 mathematical prototype. Outputs are based on documented simulation assumptions, not on validated NASA data or predictions."
 }
 ```
@@ -319,9 +419,22 @@ Abridged response:
 Units: biomass / CO₂ / O₂ in grams, water in litres, growth rate in g/day.
 Out‑of‑range inputs return `422` with a flat `message` and a per‑field map.
 
+All fields from the first version of the API are still present with the same
+meaning (`waterUsed` = water supplied); the harvest, water‑balance and impact
+blocks were added on top.
+
 Other endpoints: `GET /api/crops` (baseline parameters), `GET /api/config`
-(ranges, defaults, presets — the UI builds its sliders from this),
-`GET /api/health`.
+(ranges, defaults, scenario presets, model assumptions and model status — the
+UI builds its controls and the assumptions panel from this),
+`GET /api/assumptions`, `GET /api/health`.
+
+### Testing
+
+```bash
+cd backend && pytest            # engine, impact breakdown, harvest/water bookkeeping, API
+cd frontend && npm run lint     # ESLint
+cd frontend && npm run build    # production build (3D scene is a separate lazy chunk)
+```
 
 ## 11. Future roadmap
 
@@ -331,8 +444,9 @@ Other endpoints: `GET /api/crops` (baseline parameters), `GET /api/config`
   loader producing `CropProfile` objects) needs to change.
 - **Phase 3 — learning models**: fit response curves / ML models on the
   calibrated data, expose uncertainty bands in the charts.
-- **Phase 4 — Digital Twin**: multi‑crop modules, crew demand balancing,
-  scenario saving, mission‑level planning (Moon / Mars transit / surface).
+- **Phase 4 — full Digital Twin**: grow the current 3D chamber view into
+  multi‑crop modules, crew demand balancing, scenario saving and mission‑level
+  planning (Moon / Mars transit / surface).
 - More crops, more inputs (temperature, humidity, nutrients, pressure),
   scenario export and sharing.
 
