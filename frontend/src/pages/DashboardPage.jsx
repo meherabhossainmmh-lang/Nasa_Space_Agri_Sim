@@ -1,11 +1,17 @@
-import Header from '../components/Header.jsx'
-import Footer from '../components/Footer.jsx'
-import Starfield from '../components/Starfield.jsx'
-import ControlPanel from '../components/ControlPanel.jsx'
-import MetricsGrid from '../components/MetricsGrid.jsx'
-import ComparisonPanel from '../components/ComparisonPanel.jsx'
+import { useCallback, useState } from 'react'
+import MissionHeader from '../components/MissionHeader.jsx'
+import MissionOverview from '../components/MissionOverview.jsx'
+import MissionControls from '../components/MissionControls.jsx'
+import MetricSummary from '../components/MetricSummary.jsx'
+import EarthSpaceComparison from '../components/EarthSpaceComparison.jsx'
+import MissionInsight from '../components/MissionInsight.jsx'
 import GrowthPanel from '../components/GrowthPanel.jsx'
 import LifeSupportPanel from '../components/LifeSupportPanel.jsx'
+import DigitalTwin3D from '../components/DigitalTwin3D.jsx'
+import ModelAssumptions from '../components/ModelAssumptions.jsx'
+import SystemAlert from '../components/SystemAlert.jsx'
+import Footer from '../components/Footer.jsx'
+import Starfield from '../components/Starfield.jsx'
 import { useSimulationParams } from '../hooks/useSimulationParams.js'
 import { useSimulation } from '../hooks/useSimulation.js'
 import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
@@ -13,56 +19,71 @@ import { useSimulationConfig } from '../hooks/useSimulationConfig.js'
 /**
  * Main (and only) page of the Phase 1 dashboard.
  *
- * Layout:  header on top, controls on the left, results on the right
- *          (metric cards -> comparison -> charts). On small screens the
- *          columns stack, controls first.
+ * Progressive disclosure, top to bottom:
+ *   1. identity + mission overview + controls + snapshot + Earth vs space
+ *   2. insight / what-if, growth, life support, 3D chamber
+ *   3. model assumptions and status
+ * On large screens the controls sit in a sticky left column.
  */
 export default function DashboardPage() {
   const { config } = useSimulationConfig()
   const { params, setParam, resetParams } = useSimulationParams(config)
   const { result, error, isLoading, retry } = useSimulation(params)
 
+  // pinned scenario for the what-if comparison
+  const [baseline, setBaseline] = useState(null)
+  const pinBaseline = useCallback(() => {
+    if (result) setBaseline({ params, result })
+  }, [params, result])
+  const clearBaseline = useCallback(() => setBaseline(null), [])
+
   return (
     <div className="min-h-screen text-slate-200">
       <Starfield />
-      <Header isLoading={isLoading} error={error} />
+      <MissionHeader isLoading={isLoading} error={error} hasResult={Boolean(result)} />
 
-      <main className="mx-auto grid max-w-[1600px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-[76px] lg:self-start">
-          <ControlPanel config={config} params={params} onChange={setParam} onReset={resetParams} />
-        </aside>
+      <main className="mx-auto max-w-[1600px] space-y-4 px-3 py-4 sm:px-6 sm:py-5">
+        <MissionOverview params={params} config={config} result={result} />
 
-        <section className="min-w-0 space-y-6" aria-live="polite">
-          {error && (
-            <div className="flex items-start gap-3 rounded-xl border border-neon-rose/40 bg-neon-rose/10 px-4 py-3 text-sm text-neon-rose">
-              <span aria-hidden="true">⚠️</span>
-              <div className="flex-1">
-                <p className="font-medium">Simulation unavailable</p>
-                <p className="text-neon-rose/80">{error.message}</p>
-              </div>
-              <button
-                type="button"
-                onClick={retry}
-                className="rounded-lg border border-neon-rose/50 px-3 py-1 text-xs font-medium hover:bg-neon-rose/10"
-              >
-                Retry
-              </button>
+        <div className="grid gap-4 lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[350px_minmax(0,1fr)]">
+          <aside className="min-w-0 lg:sticky lg:top-[64px] lg:self-start">
+            <MissionControls config={config} params={params} onChange={setParam} onReset={resetParams} isLoading={isLoading} />
+          </aside>
+
+          <section className="min-w-0 space-y-4" aria-live="polite" aria-busy={isLoading || undefined}>
+            {error && <SystemAlert error={error} onRetry={retry} />}
+
+            <MetricSummary result={result} isLoading={isLoading} />
+
+            <EarthSpaceComparison
+              result={result}
+              mode={params.earthComparisonMode}
+              onModeChange={(mode) => setParam('earthComparisonMode', mode)}
+            />
+
+            <MissionInsight
+              result={result}
+              params={params}
+              config={config}
+              baseline={baseline}
+              onPinBaseline={pinBaseline}
+              onClearBaseline={clearBaseline}
+            />
+
+            <div className="grid gap-4 2xl:grid-cols-2">
+              <GrowthPanel result={result} />
+              <LifeSupportPanel result={result} />
             </div>
-          )}
 
-          <MetricsGrid result={result} isLoading={isLoading} />
+            <DigitalTwin3D result={result} />
 
-          <ComparisonPanel
-            result={result}
-            mode={params.earthComparisonMode}
-            onModeChange={(mode) => setParam('earthComparisonMode', mode)}
-          />
-
-          <div className="grid gap-6 2xl:grid-cols-2">
-            <GrowthPanel result={result} />
-            <LifeSupportPanel result={result} />
-          </div>
-        </section>
+            <ModelAssumptions
+              assumptions={config.assumptions}
+              modelStatus={config.modelStatus}
+              disclaimer={result?.disclaimer ?? config.disclaimer}
+            />
+          </section>
+        </div>
       </main>
 
       <Footer disclaimer={result?.disclaimer ?? config.disclaimer} />
