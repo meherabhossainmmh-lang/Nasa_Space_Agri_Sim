@@ -192,7 +192,9 @@ class HarvestSummary(BaseModel):
     """
 
     standingBiomass: float = Field(description="Unharvested biomass at the end of the run (g)")
-    harvestedYield: float = Field(description="Biomass harvested inside the window (g)")
+    harvestedYield: float = Field(description="Biomass harvested inside the window, all cycles (g)")
+    lastHarvestYield: float = Field(0.0, description="Biomass of the most recent harvest, 0 if none (g)")
+    lastHarvestDay: int | None = Field(None, description="Day of the most recent harvest, null if none")
     cumulativeBiomass: float = Field(description="Standing + harvested = total produced (g)")
     potentialHarvest: float = Field(description="Yield of one full cycle under the space conditions (g)")
     cycleLengthDays: int

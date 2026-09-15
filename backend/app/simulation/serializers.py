@@ -100,14 +100,19 @@ def _impact_summary(result: SimulationResult) -> ImpactSummary:
 def _harvest_summary(result: SimulationResult) -> HarvestSummary:
     space = result.space
     days = result.inputs.simulation_days
+    harvest_days = result.harvest_days
+    # every cycle runs under the same conditions, so each harvest equals the potential harvest
+    last_harvest = space.potential_harvest_g if harvest_days else 0.0
     return HarvestSummary(
         standingBiomass=_r(space.standing_biomass_g, 1),
         harvestedYield=_r(space.harvested_yield_g, 1),
+        lastHarvestYield=_r(last_harvest, 1),
+        lastHarvestDay=harvest_days[-1] if harvest_days else None,
         cumulativeBiomass=_r(space.crop_yield_g, 1),
         potentialHarvest=_r(space.potential_harvest_g, 1),
         cycleLengthDays=result.crop.growth_duration_days,
         cyclesCompleted=result.cycles_completed,
-        harvestDays=result.harvest_days,
+        harvestDays=harvest_days,
         nextHarvestDay=result.next_harvest_day,
         daysUntilNextHarvest=result.next_harvest_day - days,
         harvestWithinWindow=result.harvest_within_window,

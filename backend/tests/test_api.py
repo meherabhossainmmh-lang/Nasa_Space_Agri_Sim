@@ -103,6 +103,7 @@ def test_harvest_summary_separates_standing_and_harvested(client):
     assert harvest["harvestedYield"] == 0.0
     assert harvest["standingBiomass"] == body["cropYield"]
     assert harvest["nextHarvestDay"] == 35 and harvest["daysUntilNextHarvest"] == 5
+    assert harvest["lastHarvestYield"] == 0.0 and harvest["lastHarvestDay"] is None
     assert body["space"]["harvestedYield"] == 0.0
     assert body["dailyGrowthData"][-1]["spaceHarvested"] == 0.0
 
@@ -110,6 +111,9 @@ def test_harvest_summary_separates_standing_and_harvested(client):
     harvest = body["harvest"]
     assert harvest["harvestDays"] == [35, 70] and harvest["cyclesCompleted"] == 2
     assert harvest["harvestedYield"] > 0
+    assert harvest["lastHarvestDay"] == 70
+    assert harvest["lastHarvestYield"] == pytest.approx(harvest["harvestedYield"] / 2, abs=0.1)
+    assert harvest["lastHarvestYield"] == harvest["potentialHarvest"]
     assert body["dailyGrowthData"][35]["isHarvestDay"] is True
     assert body["dailyGrowthData"][35]["spaceHarvested"] > 0
 
