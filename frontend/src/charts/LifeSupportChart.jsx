@@ -1,127 +1,100 @@
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { CHART_COLORS, axisProps, gridProps, legendProps, tooltipStyle } from './chartTheme.js'
 import { formatMass, formatVolume } from '../services/formatters.js'
 
 /**
- * Water used / recovered (litres, left axis) and CO2 removed / O2 produced
- * (grams, right axis) over the simulated period.
+ * Two single-axis charts instead of one dual-axis chart:
  *
- * `mode` = 'daily'      -> per-day values
- * `mode` = 'cumulative' -> running totals
+ *   WaterLoopChart   demand / supplied / deficit / recovered (litres)
+ *   AtmosphereChart  CO2 removed / O2 produced (grams)
+ *
+ * `mode` = 'daily' | 'cumulative'
  */
-const SERIES = {
-  daily: {
-    waterUsed: 'waterUsed',
-    waterRecovered: 'waterRecovered',
-    co2: 'co2Removed',
-    o2: 'o2Produced',
-  },
+const WATER_KEYS = {
+  daily: { demand: 'waterDemand', supplied: 'waterUsed', deficit: 'waterDeficit', recovered: 'waterRecovered' },
   cumulative: {
-    waterUsed: 'cumulativeWaterUsed',
-    waterRecovered: 'cumulativeWaterRecovered',
-    co2: 'cumulativeCo2Removed',
-    o2: 'cumulativeO2Produced',
+    demand: 'cumulativeWaterDemand',
+    supplied: 'cumulativeWaterUsed',
+    deficit: 'cumulativeWaterDeficit',
+    recovered: 'cumulativeWaterRecovered',
   },
 }
 
-export default function LifeSupportChart({ data = [], mode = 'daily', visible }) {
-  const keys = SERIES[mode] ?? SERIES.daily
-  const show = (name) => !visible || visible[name] !== false
+const GAS_KEYS = {
+  daily: { co2: 'co2Removed', o2: 'o2Produced' },
+  cumulative: { co2: 'cumulativeCo2Removed', o2: 'cumulativeO2Produced' },
+}
 
+const xAxis = (
+  <XAxis
+    dataKey="day"
+    type="number"
+    domain={[0, 'dataMax']}
+    {...axisProps}
+    label={{ value: 'Mission day', position: 'insideBottom', offset: -2, fill: CHART_COLORS.axisLabel, fontSize: 10 }}
+    height={34}
+  />
+)
+
+export function WaterLoopChart({ data = [], mode = 'daily', height = 'h-56' }) {
+  const k = WATER_KEYS[mode] ?? WATER_KEYS.daily
+  const hasDeficit = data.some((d) => d[k.deficit] > 0)
+  const unit = mode === 'daily' ? 'L/day' : 'L'
   return (
-    <div className="h-72 w-full">
+    <div className={`${height} w-full`}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 14, left: 4, bottom: 4 }}>
+          <defs>
+            <linearGradient id="suppliedFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={CHART_COLORS.waterSupplied} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={CHART_COLORS.waterSupplied} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="deficitFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={CHART_COLORS.waterDeficit} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={CHART_COLORS.waterDeficit} stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
           <CartesianGrid {...gridProps} />
-          <XAxis
-            dataKey="day"
-            type="number"
-            domain={[0, 'dataMax']}
-            {...axisProps}
-            label={{ value: 'Day', position: 'insideBottomRight', offset: -4, fill: '#64748b', fontSize: 11 }}
-          />
+          {xAxis}
           <YAxis
-            yAxisId="water"
             {...axisProps}
-            width={60}
+            width={58}
             tickFormatter={(v) => formatVolume(v)}
-            label={{ value: 'Water', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }}
+            label={{ value: `Water (${unit})`, angle: -90, position: 'insideLeft', offset: 16, fill: CHART_COLORS.axisLabel, fontSize: 10 }}
           />
-          <YAxis
-            yAxisId="gas"
-            orientation="right"
-            {...axisProps}
-            width={64}
-            tickFormatter={(v) => formatMass(v)}
-            label={{ value: 'Gas', angle: 90, position: 'insideRight', fill: '#64748b', fontSize: 11 }}
-          />
-          <Tooltip
-            {...tooltipStyle}
-            formatter={(value, name, item) => [
-              item?.yAxisId === 'water' ? formatVolume(value) : formatMass(value),
-              name,
-            ]}
-            labelFormatter={(day) => `Day ${day}`}
-          />
+          <Tooltip {...tooltipStyle} formatter={(value, name) => [formatVolume(value), name]} labelFormatter={(day) => `Day ${day}`} />
           <Legend {...legendProps} />
-          {show('waterUsed') && (
-            <Line
-              yAxisId="water"
-              type="monotone"
-              dataKey={keys.waterUsed}
-              name="Water used"
-              stroke={CHART_COLORS.waterUsed}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
+          <Area type="monotone" dataKey={k.demand} name="Demand" stroke={CHART_COLORS.waterDemand} strokeDasharray="4 3" strokeWidth={1.5} fill="none" dot={false} isAnimationActive={false} />
+          <Area type="monotone" dataKey={k.supplied} name="Supplied" stroke={CHART_COLORS.waterSupplied} strokeWidth={2} fill="url(#suppliedFill)" dot={false} isAnimationActive={false} />
+          {hasDeficit && (
+            <Area type="monotone" dataKey={k.deficit} name="Deficit (unmet)" stroke={CHART_COLORS.waterDeficit} strokeWidth={1.75} fill="url(#deficitFill)" dot={false} isAnimationActive={false} />
           )}
-          {show('waterRecovered') && (
-            <Line
-              yAxisId="water"
-              type="monotone"
-              dataKey={keys.waterRecovered}
-              name="Water recovered"
-              stroke={CHART_COLORS.waterRecovered}
-              strokeWidth={2}
-              strokeDasharray="5 3"
-              dot={false}
-              isAnimationActive={false}
-            />
-          )}
-          {show('co2') && (
-            <Line
-              yAxisId="gas"
-              type="monotone"
-              dataKey={keys.co2}
-              name="CO₂ removed"
-              stroke={CHART_COLORS.co2}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          )}
-          {show('o2') && (
-            <Line
-              yAxisId="gas"
-              type="monotone"
-              dataKey={keys.o2}
-              name="O₂ produced"
-              stroke={CHART_COLORS.o2}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          )}
+          <Area type="monotone" dataKey={k.recovered} name="Recovered" stroke={CHART_COLORS.waterRecovered} strokeWidth={1.5} fill="none" dot={false} isAnimationActive={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export function AtmosphereChart({ data = [], mode = 'daily', height = 'h-56' }) {
+  const k = GAS_KEYS[mode] ?? GAS_KEYS.daily
+  const unit = mode === 'daily' ? 'g/day' : 'g'
+  return (
+    <div className={`${height} w-full`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 10, right: 14, left: 4, bottom: 4 }}>
+          <CartesianGrid {...gridProps} />
+          {xAxis}
+          <YAxis
+            {...axisProps}
+            width={58}
+            tickFormatter={(v) => formatMass(v)}
+            label={{ value: `Gas (${unit})`, angle: -90, position: 'insideLeft', offset: 16, fill: CHART_COLORS.axisLabel, fontSize: 10 }}
+          />
+          <Tooltip {...tooltipStyle} formatter={(value, name) => [formatMass(value), name]} labelFormatter={(day) => `Day ${day}`} />
+          <Legend {...legendProps} />
+          <Line type="monotone" dataKey={k.co2} name="CO₂ removed" stroke={CHART_COLORS.co2} strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey={k.o2} name="O₂ produced" stroke={CHART_COLORS.o2} strokeWidth={2} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
