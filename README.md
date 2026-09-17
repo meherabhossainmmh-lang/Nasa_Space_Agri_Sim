@@ -15,6 +15,23 @@ your space scenario, with the difference broken down driver by driver.
 > phases. The current simulator does **not** represent validated NASA
 > predictions.
 
+![Dashboard overview](docs/screenshots/dashboard-overview.png)
+
+| Why is space different? | Crop growth (90 days, 2 harvests) |
+| --- | --- |
+| ![Impact breakdown](docs/screenshots/impact-breakdown.png) | ![Crop growth](docs/screenshots/crop-growth.png) |
+
+| Life support (water loop + atmosphere) | Space growth chamber (3D twin) |
+| --- | --- |
+| ![Life support](docs/screenshots/life-support.png) | ![Digital twin](docs/screenshots/digital-twin.png) |
+
+<details>
+<summary>Mobile layout</summary>
+
+![Mobile](docs/screenshots/mobile.png)
+
+</details>
+
 ---
 
 ## Table of contents
@@ -303,6 +320,7 @@ SpaceAgriSim/
 │   │   │                       # model_description, serializers
 │   │   └── config/             # settings + simulation_constants (all assumptions)
 │   └── tests/                  # pytest suite
+├── docs/screenshots/           # dashboard captures used in this README
 ├── .gitignore
 ├── LICENSE
 └── README.md
