@@ -215,13 +215,17 @@ function CameraRig({ reduced }) {
   return null
 }
 
-export default function GrowthChamberScene({ state, reduced = false }) {
+export default function GrowthChamberScene({ state, reduced = false, paused = false }) {
+  // 'demand' renders only when props change: used for reduced motion and
+  // while the panel is scrolled out of view, so the twin never costs frames
+  // when nobody is looking at it
+  const frameloop = reduced || paused ? 'demand' : 'always'
   return (
     <Canvas
       dpr={[1, 1.5]}
       camera={{ position: [0, 1.2, 7.2], fov: 42 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-      frameloop={reduced ? 'demand' : 'always'}
+      frameloop={frameloop}
       style={{ background: 'transparent' }}
     >
       <ambientLight intensity={0.35} />

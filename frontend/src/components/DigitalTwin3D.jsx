@@ -1,10 +1,20 @@
-import { Component, Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import Panel from './Panel.jsx'
 import { deriveTwinState, webglAvailable } from '../services/twinState.js'
 import { formatDay, formatMass, formatNumber, formatPercent } from '../services/formatters.js'
 
 // three.js is only downloaded when the twin is switched on
 const GrowthChamberScene = lazy(() => import('../three/GrowthChamberScene.jsx'))
+
+const STORAGE_KEY = 'spaceagrisim.twin3d'
+
+function readStoredPreference() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'on'
+  } catch {
+    return false
+  }
+}
 
 const LEGEND = [
   { key: 'growth', label: 'Growth', color: '#4ade80', read: (s) => `${formatNumber(s.canopyScale * 100, 0)}% of a full canopy` },
@@ -23,9 +33,11 @@ const LEGEND = [
  * - reads only from the simulation result (via deriveTwinState)
  */
 export default function DigitalTwin3D({ result }) {
-  const [enabled, setEnabled] = useState(false)
+  const [enabled, setEnabled] = useState(readStoredPreference)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [renderError, setRenderError] = useState(null)
+  const [inView, setInView] = useState(true)
+  const viewportRef = useRef(null)
   const state = useMemo(() => deriveTwinState(result), [result])
   const webgl = useMemo(() => webglAvailable(), [])
 
@@ -36,6 +48,27 @@ export default function DigitalTwin3D({ result }) {
     media.addEventListener('change', update)
     return () => media.removeEventListener('change', update)
   }, [])
+
+  // pause the render loop while the chamber is scrolled out of view
+  useEffect(() => {
+    const node = viewportRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return undefined
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.05 })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  const toggle = () => {
+    setEnabled((value) => {
+      const next = !value
+      try {
+        window.localStorage.setItem(STORAGE_KEY, next ? 'on' : 'off')
+      } catch {
+        /* private mode: preference simply is not remembered */
+      }
+      return next
+    })
+  }
 
   const canRender3D = webgl && !renderError
 
@@ -51,7 +84,7 @@ export default function DigitalTwin3D({ result }) {
           type="button"
           role="switch"
           aria-checked={enabled}
-          onClick={() => setEnabled((v) => !v)}
+          onClick={toggle}
           className={`rounded border px-2.5 py-1 font-mono text-[10px] tracking-wider transition-colors ${
             enabled ? 'border-accent/60 bg-accent/10 text-accent' : 'border-line-strong text-slate-300 hover:border-accent/60 hover:text-accent'
           }`}
@@ -61,7 +94,7 @@ export default function DigitalTwin3D({ result }) {
       }
     >
       <div className="grid lg:grid-cols-[minmax(0,1fr)_15rem]">
-        <div className="relative min-h-[16rem] sm:min-h-[20rem] lg:min-h-[22rem]">
+        <div ref={viewportRef} className="relative min-h-[16rem] sm:min-h-[20rem] lg:min-h-[22rem]">
           {!state && <Placeholder text="Waiting for simulation…" />}
           {state && !enabled && (
             <Placeholder text="3D view is off">
@@ -82,7 +115,7 @@ export default function DigitalTwin3D({ result }) {
             <div className="absolute inset-0">
               <SceneErrorBoundary onError={setRenderError}>
                 <Suspense fallback={<Placeholder text="Loading 3D chamber…" />}>
-                  <GrowthChamberScene state={state} reduced={reducedMotion} />
+                  <GrowthChamberScene state={state} reduced={reducedMotion} paused={!inView} />
                 </Suspense>
               </SceneErrorBoundary>
               <div className="pointer-events-none absolute left-3 top-3 rounded border border-line bg-space-950/70 px-2 py-1 font-mono text-[10px] tracking-wider text-slate-300">
