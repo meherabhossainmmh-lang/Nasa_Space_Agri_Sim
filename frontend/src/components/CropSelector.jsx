@@ -1,10 +1,18 @@
+import { handleRadioGroupKeyDown, radioTabIndex } from '../services/a11y.js'
+
 /**
  * Crop picker rendered as a row of selectable cards.
  * Shows the cycle length so the user can relate it to the simulation window.
  */
 export default function CropSelector({ crops, value, onChange }) {
+  const keys = crops.map((c) => c.key)
   return (
-    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Crop">
+    <div
+      className="grid grid-cols-3 gap-2"
+      role="radiogroup"
+      aria-label="Crop"
+      onKeyDown={(event) => handleRadioGroupKeyDown(event, keys, value, onChange)}
+    >
       {crops.map((crop) => {
         const selected = crop.key === value
         return (
@@ -13,6 +21,7 @@ export default function CropSelector({ crops, value, onChange }) {
             type="button"
             role="radio"
             aria-checked={selected}
+            tabIndex={radioTabIndex(selected)}
             title={crop.description}
             onClick={() => onChange(crop.key)}
             className={`flex flex-col items-start rounded-md border px-2.5 py-2 text-left transition-colors ${

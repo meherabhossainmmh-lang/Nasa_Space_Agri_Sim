@@ -1,3 +1,5 @@
+import { handleRadioGroupKeyDown, radioTabIndex } from '../services/a11y.js'
+
 /**
  * Segmented control for the simulation length. When the window is shorter
  * than the crop cycle it says so, because that is exactly the case where
@@ -9,7 +11,12 @@ export default function DurationSelector({ options, value, cycleLengthDays, onCh
 
   return (
     <div>
-      <div className="grid grid-cols-5 gap-1 rounded-md border border-line-strong bg-space-800/60 p-1" role="radiogroup" aria-label="Simulation duration">
+      <div
+        className="grid grid-cols-5 gap-1 rounded-md border border-line-strong bg-space-800/60 p-1"
+        role="radiogroup"
+        aria-label="Simulation duration"
+        onKeyDown={(event) => handleRadioGroupKeyDown(event, options, value, onChange)}
+      >
         {options.map((days) => {
           const selected = days === value
           return (
@@ -18,6 +25,8 @@ export default function DurationSelector({ options, value, cycleLengthDays, onCh
               type="button"
               role="radio"
               aria-checked={selected}
+              aria-label={`${days} days`}
+              tabIndex={radioTabIndex(selected)}
               onClick={() => onChange(days)}
               className={`rounded px-1 py-1.5 font-mono text-xs transition-colors ${
                 selected ? 'bg-accent/15 text-accent shadow-[inset_0_0_0_1px_rgba(34,211,238,0.5)]' : 'text-slate-400 hover:text-slate-200'
