@@ -1,221 +1,437 @@
-import { useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useEffect, useMemo, useRef } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /**
- * SPACE GROWTH CHAMBER - a small procedural scene rendered with
- * react-three-fiber. It reacts to `state` (see services/twinState.js):
+ * SPACE GROWTH CHAMBER - a lightweight procedural 3D scene.
  *
- *   plant size / colour      standing biomass fraction and health
- *   light panels             photoperiod
- *   water lines              supplied share of demand (amber when in deficit)
- *   radiation indicator      dose rate
- *   CO2 / O2 indicators      CO2 setting and gas exchange activity
+ * Visualisation layer only: every visual parameter comes from `state`
+ * (see services/twinState.js), which is derived from the simulation
+ * response. Nothing in here computes growth, water or gas exchange.
  *
- * Geometry is deliberately simple (boxes, cylinders, spheres) so it stays
- * cheap on laptops and does not distract from the data.
+ *   plant size / density     standing biomass share of a full cycle, area
+ *   leaf colour              space-vs-Earth ratio (paler = further below Earth)
+ *   leaf droop               water deficit (illustrative stress cue)
+ *   LED bars                 photoperiod
+ *   water manifold           supplied share of demand (amber when in deficit)
+ *   radiation strip          dose rate (amber warning at high dose)
+ *   CO2 / O2 strips          CO2 setting and gas-exchange activity
+ *
+ * Geometry is simple (boxes, cylinders, low-poly spheres) and plants are
+ * instanced, so the scene stays cheap on laptops.
  */
 
-const CHAMBER = { w: 6, h: 3.2, d: 4 }
-const TRAY_Y = -1.15
+const CHAMBER = { w: 6.4, h: 2.9, d: 4.2 }
+const FRAME = '#33415c'
+const PANEL = '#0b1222'
+const TRAY = '#1a2740'
+const TRAY_Y = -0.85
 
 const CROP_STYLE = {
-  lettuce: { leaf: '#4ade80', shape: 'rosette' },
-  tomato: { leaf: '#22c55e', shape: 'vine' },
-  radish: { leaf: '#34d399', shape: 'rosette' },
+  lettuce: { leaf: '#3fbf6b', kind: 'rosette' },
+  tomato: { leaf: '#2f9e5a', kind: 'vine' },
+  radish: { leaf: '#35b26a', kind: 'rosette' },
 }
 
-function healthColor(base, health) {
-  // fade from the crop's green towards a pale yellow-green as health drops
-  const green = new THREE.Color(base)
-  const stressed = new THREE.Color('#a3a34a')
-  return green.lerp(stressed, 1 - health).getStyle()
+const tmpObject = new THREE.Object3D()
+const tmpColor = new THREE.Color()
+
+function leafColor(base, health, deficit) {
+  // healthy green -> pale yellow-green as the space/Earth ratio drops;
+  // water deficit desaturates a little more (illustrative only)
+  const c = new THREE.Color(base)
+  const stressed = new THREE.Color('#9a9c4c')
+  c.lerp(stressed, (1 - health) * 0.9 + (deficit ? 0.15 : 0))
+  return c
 }
 
-function Plant({ position, scale, color, shape, reduced }) {
-  const group = useRef()
-  useFrame(({ clock }) => {
-    if (reduced || !group.current) return
-    // very slow sway so the chamber does not look frozen
-    group.current.rotation.z = Math.sin(clock.elapsedTime * 0.6 + position[0]) * 0.02
-  })
-  const s = Math.max(scale, 0.04)
+/* ------------------------------------------------------------------ */
+/* structure                                                           */
+/* ------------------------------------------------------------------ */
+
+function Frame() {
+  const { w, h, d } = CHAMBER
+  const t = 0.06
+  const bars = useMemo(() => {
+    const list = []
+    const x = w / 2
+    const y = h / 2
+    const z = d / 2
+    // 12 edges of the box
+    for (const sy of [-1, 1]) for (const sz of [-1, 1]) list.push({ pos: [0, sy * y, sz * z], size: [w, t, t] })
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) list.push({ pos: [sx * x, 0, sz * z], size: [t, h, t] })
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) list.push({ pos: [sx * x, sy * y, 0], size: [t, t, d] })
+    // mid rails on the long sides
+    for (const sz of [-1, 1]) list.push({ pos: [0, 0.25, sz * z], size: [w, t * 0.7, t * 0.7] })
+    return list
+  }, [w, h, d])
   return (
-    <group ref={group} position={position}>
-      {/* stem */}
-      <mesh position={[0, 0.12 * s, 0]}>
-        <cylinderGeometry args={[0.02, 0.03, 0.25 * s, 6]} />
-        <meshStandardMaterial color="#5b8a5b" />
-      </mesh>
-      {shape === 'vine' ? (
-        <>
-          <mesh position={[0, 0.35 * s, 0]}>
-            <sphereGeometry args={[0.22 * s, 10, 8]} />
-            <meshStandardMaterial color={color} roughness={0.8} />
-          </mesh>
-          {s > 0.6 && (
-            <mesh position={[0.12 * s, 0.28 * s, 0.1 * s]}>
-              <sphereGeometry args={[0.06 * s, 8, 6]} />
-              <meshStandardMaterial color="#f87171" roughness={0.5} />
-            </mesh>
-          )}
-        </>
-      ) : (
-        <mesh position={[0, 0.22 * s, 0]} scale={[1, 0.55, 1]}>
-          <sphereGeometry args={[0.3 * s, 12, 8]} />
-          <meshStandardMaterial color={color} roughness={0.85} />
+    <group>
+      {bars.map((b, i) => (
+        <mesh key={i} position={b.pos}>
+          <boxGeometry args={b.size} />
+          <meshStandardMaterial color={FRAME} metalness={0.7} roughness={0.35} />
         </mesh>
+      ))}
+    </group>
+  )
+}
+
+function Enclosure() {
+  const { w, h, d } = CHAMBER
+  return (
+    <group>
+      {/* floor deck */}
+      <mesh position={[0, -h / 2 + 0.04, 0]}>
+        <boxGeometry args={[w - 0.1, 0.08, d - 0.1]} />
+        <meshStandardMaterial color={PANEL} metalness={0.3} roughness={0.8} />
+      </mesh>
+      {/* back panel with subtle grid */}
+      <mesh position={[0, 0, -d / 2 + 0.05]}>
+        <boxGeometry args={[w - 0.1, h - 0.1, 0.04]} />
+        <meshStandardMaterial color="#0d1730" roughness={0.9} />
+      </mesh>
+      <gridHelper args={[w - 0.2, 12, '#1c2a47', '#16223b']} position={[0, 0, -d / 2 + 0.08]} rotation={[Math.PI / 2, 0, 0]} />
+      {/* transparent side and front glazing */}
+      {[-1, 1].map((s) => (
+        <mesh key={`side${s}`} position={[(s * (w - 0.12)) / 2, 0, 0]}>
+          <boxGeometry args={[0.02, h - 0.14, d - 0.14]} />
+          <meshPhysicalMaterial color="#9fd4e6" transparent opacity={0.07} roughness={0.1} metalness={0} transmission={0} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0, d / 2 - 0.06]}>
+        <boxGeometry args={[w - 0.14, h - 0.14, 0.02]} />
+        <meshPhysicalMaterial color="#9fd4e6" transparent opacity={0.05} roughness={0.1} />
+      </mesh>
+      {/* ceiling service panel */}
+      <mesh position={[0, h / 2 - 0.05, 0]}>
+        <boxGeometry args={[w - 0.1, 0.06, d - 0.1]} />
+        <meshStandardMaterial color="#0e1729" metalness={0.4} roughness={0.7} />
+      </mesh>
+    </group>
+  )
+}
+
+function Trays({ rows }) {
+  const { w, d } = CHAMBER
+  const rowGap = d / (rows + 1)
+  return (
+    <group>
+      {Array.from({ length: rows }).map((_, r) => {
+        const z = -d / 2 + rowGap * (r + 1)
+        return (
+          <group key={r} position={[0, TRAY_Y, z]}>
+            <mesh>
+              <boxGeometry args={[w - 1.0, 0.14, 0.7]} />
+              <meshStandardMaterial color={TRAY} metalness={0.5} roughness={0.5} />
+            </mesh>
+            {/* growth medium */}
+            <mesh position={[0, 0.075, 0]}>
+              <boxGeometry args={[w - 1.1, 0.02, 0.6]} />
+              <meshStandardMaterial color="#1f2a3d" roughness={1} />
+            </mesh>
+            {/* tray legs */}
+            {[-1, 1].map((s) => (
+              <mesh key={s} position={[(s * (w - 1.3)) / 2, -0.3, 0]}>
+                <boxGeometry args={[0.05, 0.6, 0.05]} />
+                <meshStandardMaterial color={FRAME} metalness={0.7} roughness={0.4} />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* plants (instanced)                                                  */
+/* ------------------------------------------------------------------ */
+
+function Plants({ state, reduced }) {
+  const style = CROP_STYLE[state.crop] ?? CROP_STYLE.lettuce
+  const leavesRef = useRef()
+  const stemsRef = useRef()
+  const fruitRef = useRef()
+  const { w, d } = CHAMBER
+
+  const positions = useMemo(() => {
+    const out = []
+    if (state.noArea || state.rows === 0) return out
+    const rowGap = d / (state.rows + 1)
+    const span = w - 1.4
+    const colGap = span / state.perRow
+    for (let r = 0; r < state.rows; r += 1) {
+      for (let c = 0; c < state.perRow; c += 1) {
+        // deterministic jitter so the rows do not look stamped
+        const jitter = ((r * 7 + c * 13) % 5) / 5 - 0.5
+        out.push({
+          x: -span / 2 + colGap * (c + 0.5) + jitter * 0.08,
+          z: -d / 2 + rowGap * (r + 1) + jitter * 0.1,
+          phase: (r * 3 + c) * 0.7,
+          leafCount: 3,
+        })
+      }
+    }
+    return out
+  }, [state.rows, state.perRow, state.noArea, w, d])
+
+  const count = positions.length
+  const scale = Math.max(state.canopyScale, 0.05)
+  const color = useMemo(() => leafColor(style.leaf, state.health, state.waterDeficit), [style.leaf, state.health, state.waterDeficit])
+  const droop = state.waterDeficit ? 0.35 : 0 // leaves tilt down under water deficit (illustrative)
+  const showFruit = style.kind === 'vine' && state.canopyScale > 0.55
+
+  // write instance transforms whenever the state changes
+  useEffect(() => {
+    const leaves = leavesRef.current
+    const stems = stemsRef.current
+    if (!leaves || !stems) return
+    positions.forEach((p, i) => {
+      const s = scale * (0.85 + ((i * 37) % 10) / 40)
+      // stem
+      tmpObject.position.set(p.x, TRAY_Y + 0.09 + 0.18 * s, p.z)
+      tmpObject.rotation.set(0, 0, 0)
+      tmpObject.scale.set(1, s, 1)
+      tmpObject.updateMatrix()
+      stems.setMatrixAt(i, tmpObject.matrix)
+      // canopy
+      const canopyY = TRAY_Y + 0.09 + (style.kind === 'vine' ? 0.5 : 0.34) * s
+      tmpObject.position.set(p.x, canopyY, p.z)
+      tmpObject.rotation.set(droop * 0.6, p.phase, droop * 0.4)
+      const flat = style.kind === 'vine' ? 0.9 : 0.55
+      tmpObject.scale.set(s, s * flat * (1 - droop * 0.3), s)
+      tmpObject.updateMatrix()
+      leaves.setMatrixAt(i, tmpObject.matrix)
+      leaves.setColorAt(i, tmpColor.copy(color).offsetHSL(0, 0, (((i * 11) % 7) - 3) * 0.012))
+      if (fruitRef.current) {
+        tmpObject.position.set(p.x + 0.1 * s, canopyY - 0.08 * s, p.z + 0.1 * s)
+        tmpObject.rotation.set(0, 0, 0)
+        tmpObject.scale.setScalar(showFruit ? s : 0.0001)
+        tmpObject.updateMatrix()
+        fruitRef.current.setMatrixAt(i, tmpObject.matrix)
+      }
+    })
+    leaves.instanceMatrix.needsUpdate = true
+    if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true
+    stems.instanceMatrix.needsUpdate = true
+    if (fruitRef.current) fruitRef.current.instanceMatrix.needsUpdate = true
+  }, [positions, scale, color, droop, style.kind, showFruit])
+
+  // very slow, tiny sway so the chamber does not look frozen
+  useFrame(({ clock }) => {
+    if (reduced || !leavesRef.current) return
+    leavesRef.current.rotation.z = Math.sin(clock.elapsedTime * 0.5) * 0.008
+  })
+
+  if (count === 0) return null
+  const canopyRadius = style.kind === 'vine' ? 0.26 : 0.36
+
+  return (
+    <group>
+      <instancedMesh ref={stemsRef} args={[undefined, undefined, count]} key={`stems-${count}`}>
+        <cylinderGeometry args={[0.022, 0.034, 0.36, 6]} />
+        <meshStandardMaterial color="#4f7d52" roughness={0.9} />
+      </instancedMesh>
+      <instancedMesh ref={leavesRef} args={[undefined, undefined, count]} key={`leaves-${count}`}>
+        <icosahedronGeometry args={[canopyRadius, 1]} />
+        <meshStandardMaterial color={color} roughness={0.85} flatShading />
+      </instancedMesh>
+      {style.kind === 'vine' && (
+        <instancedMesh ref={fruitRef} args={[undefined, undefined, count]} key={`fruit-${count}`}>
+          <sphereGeometry args={[0.05, 8, 6]} />
+          <meshStandardMaterial color="#e05b5b" roughness={0.5} />
+        </instancedMesh>
       )}
     </group>
   )
 }
 
-function CropRows({ state, reduced }) {
-  const style = CROP_STYLE[state.crop] ?? CROP_STYLE.lettuce
-  const color = healthColor(style.leaf, state.health)
-  const plants = useMemo(() => {
-    const out = []
-    if (state.noArea) return out
-    const rowGap = CHAMBER.d / (state.rows + 1)
-    const colGap = (CHAMBER.w - 1.2) / (state.perRow + 1)
-    for (let r = 0; r < state.rows; r += 1) {
-      for (let c = 0; c < state.perRow; c += 1) {
-        out.push([-(CHAMBER.w - 1.2) / 2 + colGap * (c + 1), TRAY_Y + 0.08, -CHAMBER.d / 2 + rowGap * (r + 1)])
-      }
-    }
-    return out
-  }, [state.rows, state.perRow, state.noArea])
+/* ------------------------------------------------------------------ */
+/* systems: lights, water, sensors, indicators                         */
+/* ------------------------------------------------------------------ */
+
+function GrowLights({ light }) {
+  const { h, d } = CHAMBER
+  const intensity = light
+  const emissive = new THREE.Color('#fde8b8')
+  return (
+    <group position={[0, h / 2 - 0.16, 0]}>
+      {[-1.9, 0, 1.9].map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          {/* housing */}
+          <mesh>
+            <boxGeometry args={[1.4, 0.08, d - 1.0]} />
+            <meshStandardMaterial color="#141d33" metalness={0.6} roughness={0.4} />
+          </mesh>
+          {/* LED strip */}
+          <mesh position={[0, -0.045, 0]}>
+            <boxGeometry args={[1.25, 0.012, d - 1.15]} />
+            <meshStandardMaterial color={emissive} emissive={emissive} emissiveIntensity={0.15 + intensity * 1.6} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+      {/* the spot points straight down at the trays (default target is the origin) */}
+      <spotLight position={[0, -0.1, 0]} angle={1.1} penumbra={0.6} intensity={4 + intensity * 30} distance={9} color="#fff4dc" />
+      {/* faint cool fill so the chamber is never black at 0 h */}
+      <pointLight position={[0, -0.5, 0]} intensity={1.5} distance={8} color="#8fb7ff" />
+    </group>
+  )
+}
+
+function WaterManifold({ supply, deficit, rows, reduced }) {
+  const { w, d } = CHAMBER
+  const color = deficit ? '#e0a83a' : '#5aa9ff'
+  const glow = 0.25 + supply * 0.9
+  const dropsRef = useRef()
+  const rowGap = d / (rows + 1)
+
+  useFrame(({ clock }) => {
+    if (reduced || !dropsRef.current) return
+    // droplets travel along the main line; speed and brightness follow supply
+    const t = (clock.elapsedTime * (0.25 + supply * 0.6)) % 1
+    dropsRef.current.position.x = -((w - 1.6) / 2) + t * (w - 1.6)
+  })
 
   return (
     <group>
-      {/* trays */}
-      {Array.from({ length: state.rows }).map((_, r) => {
-        const rowGap = CHAMBER.d / (state.rows + 1)
+      {/* main supply line under the trays */}
+      <mesh position={[0, TRAY_Y - 0.3, d / 2 - 0.35]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.03, 0.03, w - 1.2, 10]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={glow * 0.5} transparent opacity={0.55 + supply * 0.4} />
+      </mesh>
+      {/* branch lines to every tray */}
+      {Array.from({ length: rows }).map((_, r) => {
+        const z = -d / 2 + rowGap * (r + 1)
+        const length = d / 2 - 0.35 - z
         return (
-          <mesh key={r} position={[0, TRAY_Y, -CHAMBER.d / 2 + rowGap * (r + 1)]}>
-            <boxGeometry args={[CHAMBER.w - 1, 0.12, 0.6]} />
-            <meshStandardMaterial color="#1b2a44" metalness={0.3} roughness={0.7} />
+          <mesh key={r} position={[(w - 1.4) / 2, TRAY_Y - 0.3, z + length / 2]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.018, 0.018, Math.max(length, 0.01), 8]} />
+            <meshStandardMaterial color={color} transparent opacity={0.45 + supply * 0.4} />
           </mesh>
         )
       })}
-      {plants.map((p, i) => (
-        <Plant key={i} position={p} scale={state.canopyScale} color={color} shape={style.shape} reduced={reduced} />
-      ))}
+      {/* flow marker */}
+      <mesh ref={dropsRef} position={[0, TRAY_Y - 0.3, d / 2 - 0.35]}>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={supply * 1.5} transparent opacity={supply > 0.02 ? 1 : 0.1} toneMapped={false} />
+      </mesh>
+      {/* reservoir */}
+      <mesh position={[-(w - 1.0) / 2, TRAY_Y - 0.4, d / 2 - 0.35]}>
+        <cylinderGeometry args={[0.16, 0.16, 0.5, 14]} />
+        <meshStandardMaterial color="#13203a" metalness={0.5} roughness={0.5} />
+      </mesh>
+      <mesh position={[-(w - 1.0) / 2, TRAY_Y - 0.4 - 0.25 + 0.25 * supply, d / 2 - 0.35]}>
+        <cylinderGeometry args={[0.13, 0.13, Math.max(0.5 * supply, 0.01), 14]} />
+        <meshStandardMaterial color={color} transparent opacity={0.7} />
+      </mesh>
     </group>
   )
 }
 
-function LightPanels({ light }) {
-  const intensity = 0.15 + light * 1.6
-  const panelColor = new THREE.Color('#fef3c7').lerp(new THREE.Color('#fbbf24'), 0.3)
-  return (
-    <group position={[0, CHAMBER.h / 2 - 0.15, 0]}>
-      {[-1.6, 0, 1.6].map((x) => (
-        <mesh key={x} position={[x, 0, 0]}>
-          <boxGeometry args={[1.3, 0.06, CHAMBER.d - 0.8]} />
-          <meshStandardMaterial color={panelColor} emissive={panelColor} emissiveIntensity={light * 0.9} />
-        </mesh>
-      ))}
-      <pointLight position={[0, -0.3, 0]} intensity={intensity * 6} distance={7} color="#fff7db" />
-    </group>
-  )
-}
-
-function WaterLines({ supply, deficit, reduced }) {
-  const flow = useRef()
+function Sensors({ reduced }) {
+  const { w, d } = CHAMBER
+  const ref = useRef()
   useFrame(({ clock }) => {
-    if (reduced || !flow.current) return
-    flow.current.position.x = ((clock.elapsedTime * 0.8) % 1) * (CHAMBER.w - 1.4) - (CHAMBER.w - 1.4) / 2
+    if (reduced || !ref.current) return
+    // slow blink on the monitoring points (sampling cadence, purely decorative)
+    const on = Math.sin(clock.elapsedTime * 2.2) > 0.6 ? 1.6 : 0.5
+    ref.current.children.forEach((c) => {
+      if (c.material) c.material.emissiveIntensity = on
+    })
   })
-  const color = deficit ? '#fbbf24' : '#60a5fa'
-  const opacity = 0.25 + supply * 0.7
+  const points = [
+    [-2.4, -0.4, -d / 2 + 0.12],
+    [-0.8, -0.4, -d / 2 + 0.12],
+    [0.8, -0.4, -d / 2 + 0.12],
+    [2.4, -0.4, -d / 2 + 0.12],
+    [(w - 0.4) / 2, 0.7, 0.6],
+    [-(w - 0.4) / 2, 0.7, -0.6],
+  ]
   return (
-    <group position={[0, TRAY_Y - 0.25, 0]}>
-      <mesh rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.035, 0.035, CHAMBER.w - 1.2, 8]} />
-        <meshStandardMaterial color={color} transparent opacity={opacity} emissive={color} emissiveIntensity={0.3 * supply} />
-      </mesh>
-      {/* moving droplet indicating flow; dim when supply is short */}
-      <mesh ref={flow}>
-        <sphereGeometry args={[0.06, 8, 8]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={supply} transparent opacity={supply > 0 ? 1 : 0.15} />
-      </mesh>
-      {/* risers to the trays */}
-      {[-1.8, 0, 1.8].map((x) => (
-        <mesh key={x} position={[x, 0.15, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3, 6]} />
-          <meshStandardMaterial color={color} transparent opacity={opacity} />
+    <group ref={ref}>
+      {points.map((p, i) => (
+        <mesh key={i} position={p}>
+          <boxGeometry args={[0.09, 0.09, 0.05]} />
+          <meshStandardMaterial color="#0f2a33" emissive="#22d3ee" emissiveIntensity={0.8} toneMapped={false} />
         </mesh>
       ))}
     </group>
   )
 }
 
-function Indicator({ position, color, level, label, reduced }) {
-  const mesh = useRef()
-  useFrame(({ clock }) => {
-    if (!mesh.current) return
-    const pulse = reduced ? 1 : 0.85 + 0.15 * Math.sin(clock.elapsedTime * (1 + level * 2))
-    mesh.current.material.emissiveIntensity = (0.2 + level * 1.4) * pulse
-  })
+function IndicatorStrip({ position, color, level, segments = 6, warning = false }) {
+  // vertical bar-graph style indicator on the back wall
+  const lit = Math.round(level * segments)
+  const barColor = warning ? '#f0b13a' : color
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={[0.3, 0.5, 0.12]} />
-        <meshStandardMaterial color="#0f172a" metalness={0.4} roughness={0.6} />
+      <mesh position={[0, 0, -0.02]}>
+        <boxGeometry args={[0.22, 0.14 * segments + 0.1, 0.03]} />
+        <meshStandardMaterial color="#0c1426" metalness={0.5} roughness={0.5} />
       </mesh>
-      <mesh ref={mesh} position={[0, 0, 0.07]}>
-        <boxGeometry args={[0.18, 0.1 + level * 0.28, 0.02]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} />
-      </mesh>
-      <mesh position={[0, -0.34, 0]} userData={{ label }}>
-        <boxGeometry args={[0.26, 0.04, 0.04]} />
-        <meshStandardMaterial color={color} transparent opacity={0.6} />
-      </mesh>
+      {Array.from({ length: segments }).map((_, i) => {
+        const on = i < lit
+        const y = -((segments - 1) * 0.14) / 2 + i * 0.14
+        return (
+          <mesh key={i} position={[0, y, 0.01]}>
+            <boxGeometry args={[0.14, 0.09, 0.02]} />
+            <meshStandardMaterial
+              color={on ? barColor : '#1b2640'}
+              emissive={on ? barColor : '#000000'}
+              emissiveIntensity={on ? 1.2 : 0}
+              toneMapped={false}
+            />
+          </mesh>
+        )
+      })}
     </group>
   )
 }
 
-function Chamber() {
-  return (
-    <group>
-      {/* floor */}
-      <mesh position={[0, -CHAMBER.h / 2, 0]} receiveShadow>
-        <boxGeometry args={[CHAMBER.w, 0.1, CHAMBER.d]} />
-        <meshStandardMaterial color="#0b1222" metalness={0.2} roughness={0.9} />
-      </mesh>
-      {/* back wall */}
-      <mesh position={[0, 0, -CHAMBER.d / 2]}>
-        <boxGeometry args={[CHAMBER.w, CHAMBER.h, 0.08]} />
-        <meshStandardMaterial color="#0d162b" roughness={0.9} />
-      </mesh>
-      {/* frame edges */}
-      <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(CHAMBER.w, CHAMBER.h, CHAMBER.d)]} />
-        <lineBasicMaterial color="#27365a" />
-      </lineSegments>
-      {/* monitoring points along the back wall */}
-      {[-2.4, -0.8, 0.8, 2.4].map((x) => (
-        <mesh key={x} position={[x, -0.4, -CHAMBER.d / 2 + 0.08]}>
-          <sphereGeometry args={[0.04, 8, 8]} />
-          <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={0.8} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
+/* ------------------------------------------------------------------ */
+/* camera + scene                                                       */
+/* ------------------------------------------------------------------ */
 
-function CameraRig({ reduced }) {
+const CAMERA_HOME = { x: 0, y: 0.9, z: 6.9 }
+const LOOK_AT = { x: 0, y: -0.45, z: 0 }
+
+function CameraRig({ reduced, orbit }) {
+  const invalidate = useThree((s) => s.invalidate)
+  const size = useThree((s) => s.size)
+  // narrow viewports (tablet / phone) get a longer shot so the whole chamber stays in frame
+  const distance = CAMERA_HOME.z * Math.max(1, 1.45 / Math.max(size.width / size.height, 0.5))
+  // very slow drift around the chamber; with reduced motion the camera stays put
   useFrame(({ camera, clock }) => {
-    if (reduced) return
-    const t = clock.elapsedTime * 0.08
-    camera.position.x = Math.sin(t) * 1.2
-    camera.lookAt(0, -0.4, 0)
+    const t = reduced || !orbit ? 0 : clock.elapsedTime * 0.06
+    camera.position.set(Math.sin(t) * 1.4, CAMERA_HOME.y, distance - Math.abs(Math.sin(t)) * 0.3)
+    camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z)
   })
+  useEffect(() => {
+    invalidate()
+  }, [invalidate])
   return null
 }
 
-export default function GrowthChamberScene({ state, reduced = false, paused = false }) {
+function Chamber({ state, reduced }) {
+  return (
+    <group position={[0, -0.05, 0]}>
+      <Enclosure />
+      <Frame />
+      <Trays rows={Math.max(state.rows, 1)} />
+      <Plants state={state} reduced={reduced} />
+      <GrowLights light={state.light} />
+      <WaterManifold supply={state.waterSupply} deficit={state.waterDeficit} rows={Math.max(state.rows, 1)} reduced={reduced} />
+      <Sensors reduced={reduced} />
+      {/* indicator strips on the back wall: radiation (left), CO2 and O2 (right) */}
+      <IndicatorStrip position={[-CHAMBER.w / 2 + 0.45, 0.35, -CHAMBER.d / 2 + 0.12]} color="#f87171" level={state.radiation} warning={state.radiationWarning} />
+      <IndicatorStrip position={[CHAMBER.w / 2 - 0.85, 0.35, -CHAMBER.d / 2 + 0.12]} color="#c084fc" level={state.co2Level} />
+      <IndicatorStrip position={[CHAMBER.w / 2 - 0.45, 0.35, -CHAMBER.d / 2 + 0.12]} color="#7dd3fc" level={state.gasActivity} />
+    </group>
+  )
+}
+
+export default function GrowthChamberScene({ state, reduced = false, paused = false, orbit = true }) {
   // 'demand' renders only when props change: used for reduced motion and
   // while the panel is scrolled out of view, so the twin never costs frames
   // when nobody is looking at it
@@ -223,21 +439,18 @@ export default function GrowthChamberScene({ state, reduced = false, paused = fa
   return (
     <Canvas
       dpr={[1, 1.5]}
-      camera={{ position: [0, 1.2, 7.2], fov: 42 }}
+      camera={{ position: [0, 0.9, 6.9], fov: 38, near: 0.1, far: 50 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
       frameloop={frameloop}
       style={{ background: 'transparent' }}
     >
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[4, 5, 4]} intensity={0.5} />
-      <CameraRig reduced={reduced} />
-      <Chamber />
-      <LightPanels light={state.light} />
-      <CropRows state={state} reduced={reduced} />
-      <WaterLines supply={state.waterSupply} deficit={state.waterDeficit} reduced={reduced} />
-      <Indicator position={[-CHAMBER.w / 2 + 0.35, 0.7, -CHAMBER.d / 2 + 0.2]} color="#f87171" level={state.radiation} label="radiation" reduced={reduced} />
-      <Indicator position={[CHAMBER.w / 2 - 0.95, 0.7, -CHAMBER.d / 2 + 0.2]} color="#c084fc" level={state.co2Level} label="co2" reduced={reduced} />
-      <Indicator position={[CHAMBER.w / 2 - 0.35, 0.7, -CHAMBER.d / 2 + 0.2]} color="#7dd3fc" level={state.gasActivity * state.canopyScale} label="o2" reduced={reduced} />
+      <color attach="background" args={['#070c18']} />
+      <fog attach="fog" args={['#070c18', 9, 16]} />
+      <ambientLight intensity={0.55} />
+      <hemisphereLight args={['#8fb2ff', '#0a0f1c', 0.5]} />
+      <directionalLight position={[5, 6, 5]} intensity={0.6} />
+      <CameraRig reduced={reduced} orbit={orbit} />
+      <Chamber state={state} reduced={reduced} />
     </Canvas>
   )
 }

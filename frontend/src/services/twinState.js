@@ -2,60 +2,77 @@
  * Maps a simulation result onto the visual state of the 3D growth chamber.
  *
  * Everything here is presentation: it rescales numbers the API already
- * returned into 0..1 intensities the scene can render. No simulation maths.
+ * returned into 0..1 intensities the scene can render. No simulation maths,
+ * no biology - the plants simply look bigger, paler or sparser in proportion
+ * to what the model computed.
  */
+
+// slider ranges the intensities are normalised against (mirrors the backend config)
+const RADIATION_MAX_MGY = 3
+const LIGHT_MAX_HOURS = 24
+const CO2_MIN_PPM = 300
+const CO2_MAX_PPM = 3000
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v))
+
 export function deriveTwinState(result) {
   if (!result) return null
 
-  const last = result.dailyGrowthData[result.dailyGrowthData.length - 1]
+  const days = result.dailyGrowthData
+  const last = days[days.length - 1]
   const harvest = result.harvest
   const water = result.lifeSupport.water
   const factors = result.space.factors
   const inputs = result.inputs
-  const co2 = inputs.co2Level
 
-  // plant size follows the standing biomass fraction of a full cycle
-  const growthFraction = Math.max(0, Math.min(1, last?.growthFraction ?? 0))
-  const canopyScale = harvest.potentialHarvest > 0 ? Math.min(harvest.standingBiomass / harvest.potentialHarvest, 1) : 0
+  // plant size follows the standing biomass as a share of one full cycle
+  const canopyScale = harvest.potentialHarvest > 0 ? clamp01(harvest.standingBiomass / harvest.potentialHarvest) : 0
 
   // how healthy the crop looks relative to the Earth reference (0..1)
-  const health = result.comparison.isDefined === false ? (result.cropYield > 0 ? 1 : 0) : Math.max(0, Math.min(1, result.comparison.spaceGrowthPercentage / 100))
+  const health =
+    result.comparison.isDefined === false ? (result.cropYield > 0 ? 1 : 0) : clamp01(result.comparison.spaceGrowthPercentage / 100)
 
-  // supplied share of demand, 0..1 - drives the water line brightness
-  const waterSupply = water.demand > 0 ? Math.max(0, Math.min(1, water.supplied / water.demand)) : inputs.waterAvailability / 100
+  // supplied share of demand, 0..1 - drives the water manifold
+  const waterSupply = water.demand > 0 ? clamp01(water.supplied / water.demand) : clamp01(inputs.waterAvailability / 100)
 
-  // radiation on a 0..1 scale (slider max is 3 mGy/day); light on 0..1 (24 h max)
-  const radiation = Math.max(0, Math.min(1, inputs.radiation / 3))
-  const light = Math.max(0, Math.min(1, inputs.lightHours / 24))
+  const radiation = clamp01(inputs.radiation / RADIATION_MAX_MGY)
+  const light = clamp01(inputs.lightHours / LIGHT_MAX_HOURS)
+  const co2Level = clamp01((inputs.co2Level - CO2_MIN_PPM) / (CO2_MAX_PPM - CO2_MIN_PPM))
 
-  // 0..1 CO2 enrichment (300..3000 ppm slider range)
-  const co2Level = Math.max(0, Math.min(1, (co2 - 300) / 2700))
+  // gas exchange activity relative to reference growth, scaled by how much canopy is present
+  const gasActivity = clamp01(factors.combined) * canopyScale
 
-  // O2 output intensity: relative to a full healthy cycle so the indicator scales with the chamber
-  const gasActivity = Math.max(0, Math.min(1, factors.combined))
-
-  // number of plant rows / plants per row scales gently with area
+  // plant count scales gently with the growing area (visual density only)
   const area = inputs.growingArea
-  const rows = area <= 0 ? 0 : Math.max(1, Math.min(4, Math.round(Math.sqrt(area / 2))))
-  const perRow = area <= 0 ? 0 : Math.max(2, Math.min(7, Math.round(Math.sqrt(area) + 1)))
+  const rows = area <= 0 ? 0 : Math.max(1, Math.min(4, Math.round(Math.sqrt(area / 1.2))))
+  const perRow = area <= 0 ? 0 : Math.max(4, Math.min(9, Math.round(Math.sqrt(area) * 1.4 + 3)))
 
   return {
     crop: result.crop.key,
-    growthFraction,
+    growthFraction: clamp01(last?.growthFraction ?? 0),
     canopyScale,
     health,
     waterSupply,
     waterDeficit: water.deficit > 0,
     radiation,
+    radiationMgy: inputs.radiation,
+    radiationWarning: inputs.radiation >= 1.0,
     light,
+    lightHours: inputs.lightHours,
     co2Level,
+    co2Ppm: inputs.co2Level,
     gasActivity,
     rows,
     perRow,
     noArea: area <= 0,
+    noGrowth: result.cropYield <= 0,
     harvestWithinWindow: harvest.harvestWithinWindow,
+    cyclesCompleted: harvest.cyclesCompleted,
+    lastHarvestDay: harvest.lastHarvestDay,
     day: inputs.simulationDays,
     nextHarvestDay: harvest.nextHarvestDay,
+    standingBiomass: harvest.standingBiomass,
+    spaceGrowthPercentage: result.comparison.spaceGrowthPercentage,
   }
 }
 
@@ -68,4 +85,17 @@ export function webglAvailable() {
   } catch {
     return false
   }
+}
+
+/**
+ * Rough capability check: small screens, save-data mode and very low core
+ * counts default to the 2D view (the user can still switch 3D on).
+ */
+export function deviceCanRender3D() {
+  if (typeof window === 'undefined') return false
+  const narrow = window.matchMedia('(max-width: 640px)').matches
+  const saveData = navigator.connection?.saveData === true
+  const cores = navigator.hardwareConcurrency ?? 4
+  const memory = navigator.deviceMemory ?? 4
+  return !narrow && !saveData && cores >= 2 && memory >= 2
 }
