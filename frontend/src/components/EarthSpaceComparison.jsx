@@ -54,12 +54,13 @@ export default function EarthSpaceComparison({ result, mode, onModeChange }) {
 
           {defined && c.impact ? (
             <div>
-              <p className="label-tech mb-2">Impact by driver · effect vs Earth run</p>
-              <ImpactBreakdown impact={c.impact} mode={mode} />
+              <p className="label-tech mb-2">Impact by driver · space scenario</p>
+              <ImpactBreakdown impact={c.impact} combinedFactor={result.space?.factors?.combined} />
               <p className="mt-2 text-[10px] leading-snug text-slate-500">
-                Bars show each driver’s own multiplier relative to the Earth run; the small figure is how many percentage points of the
-                combined gap it explains once the earlier drivers are applied. Drivers are applied in a fixed order (gravity → radiation →
-                water → light → CO₂), so the points add up exactly to the combined difference.
+                Bars show each driver’s own effect on growth relative to reference conditions (1 g, background radiation, full water,
+                optimal light, ambient CO₂). The small figure is how many percentage points of the Earth‑vs‑space gap it explains once the
+                earlier drivers are applied (gravity → radiation → water → light → CO₂); those points add up exactly to the combined
+                difference.{mode === 'matched' && ' In matched mode water, light and CO₂ are identical in both runs, so they support growth but explain none of the gap.'}
               </p>
             </div>
           ) : (
