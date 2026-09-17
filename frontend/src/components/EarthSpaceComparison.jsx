@@ -56,7 +56,7 @@ export default function EarthSpaceComparison({ result, mode, onModeChange }) {
             <div>
               <p className="label-tech mb-2">Impact by driver · effect vs Earth run</p>
               <ImpactBreakdown impact={c.impact} mode={mode} />
-              <p className="mt-2 text-[10px] leading-snug text-slate-600">
+              <p className="mt-2 text-[10px] leading-snug text-slate-500">
                 Bars show each driver’s own multiplier relative to the Earth run; the small figure is how many percentage points of the
                 combined gap it explains once the earlier drivers are applied. Drivers are applied in a fixed order (gravity → radiation →
                 water → light → CO₂), so the points add up exactly to the combined difference.

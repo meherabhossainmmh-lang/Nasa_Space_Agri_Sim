@@ -137,7 +137,7 @@ export default function MissionControls({ config, params, onChange, onReset, isL
             cycleLengthDays={crop?.growthDurationDays}
             onChange={(days) => onChange('simulationDays', days)}
           />
-          <p className="font-mono text-[10px] tracking-wider text-slate-600" aria-live="polite">
+          <p className="font-mono text-[10px] tracking-wider text-slate-500" aria-live="polite">
             {isLoading ? 'SIMULATING…' : 'MODEL IN SYNC WITH CONTROLS'}
           </p>
         </ControlGroup>

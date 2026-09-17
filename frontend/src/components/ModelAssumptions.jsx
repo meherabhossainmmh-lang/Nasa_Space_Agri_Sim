@@ -53,7 +53,7 @@ export default function ModelAssumptions({ assumptions = [], modelStatus, discla
             {assumptions.length === 0 && <li className="text-[11px] text-slate-500">Assumptions load from the backend once it is reachable.</li>}
           </ul>
           {!open && (
-            <p className="mt-2 font-mono text-[10px] text-slate-600">
+            <p className="mt-2 font-mono text-[10px] text-slate-500">
               {assumptions.length} components: {assumptions.map((a) => a.title).join(' · ')}
             </p>
           )}

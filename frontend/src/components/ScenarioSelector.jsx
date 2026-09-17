@@ -27,7 +27,7 @@ export default function ScenarioSelector({ presets, value, step, note, onSelect 
         )
       })}
       {note && (
-        <span className="ml-auto cursor-help font-mono text-[10px] text-slate-600" title={note} aria-label={note}>
+        <span className="ml-auto cursor-help font-mono text-[10px] text-slate-500" title={note} aria-label={note}>
           assumed
         </span>
       )}

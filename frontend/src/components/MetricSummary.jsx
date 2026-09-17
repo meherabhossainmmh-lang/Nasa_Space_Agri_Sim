@@ -165,7 +165,7 @@ export default function MetricSummary({ result, isLoading }) {
           isLoading={isLoading}
         />
       </div>
-      <p className="border-t border-line px-4 py-2 text-[10px] leading-snug text-slate-600 sm:px-5">
+      <p className="border-t border-line px-4 py-2 text-[10px] leading-snug text-slate-500 sm:px-5">
         Crew-day figures are an equivalent reference only; crew metabolism and the full atmospheric balance are not modeled.
         Water recovery uses an assumed closed-loop efficiency.
       </p>

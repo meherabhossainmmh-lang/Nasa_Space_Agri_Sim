@@ -25,7 +25,7 @@ export default function ImpactBreakdown({ impact, mode }) {
       <div className="mt-3 flex items-center justify-between gap-3 rounded border border-line bg-space-800/60 px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="label-tech">Combined</span>
-          <span className="text-[10px] text-slate-600">product of all factors</span>
+          <span className="text-[10px] text-slate-500">product of all factors</span>
         </div>
         <span
           className={`font-mono text-sm font-semibold tabular-nums ${
