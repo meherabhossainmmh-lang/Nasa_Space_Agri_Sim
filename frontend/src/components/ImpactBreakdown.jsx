@@ -60,12 +60,12 @@ function ImpactRow({ factor }) {
   const label = factor.label === 'CO2' ? 'CO₂' : factor.label
 
   return (
-    <li className="grid grid-cols-[5rem_minmax(0,1fr)_7.5rem] items-center gap-2 sm:grid-cols-[6.5rem_minmax(0,1fr)_11rem]">
+    <li className="grid grid-cols-[4rem_minmax(0,1fr)_9rem] items-center gap-2 sm:grid-cols-[6.5rem_minmax(0,1fr)_11rem]">
       <div className="min-w-0">
         <p className="truncate text-xs text-slate-200">{label}</p>
         <p className="truncate font-mono text-[10px] text-slate-500">{formatFactor(factor.spaceFactor)}</p>
       </div>
-      <div className="relative h-4 rounded-sm bg-space-800" aria-hidden="true">
+      <div className="relative h-4 min-w-0 rounded-sm bg-space-800" aria-hidden="true">
         <span className="absolute left-1/2 top-0 h-full w-px bg-line-strong" />
         <span
           className={`absolute top-1 h-2 rounded-sm ${barColor}`}
@@ -78,10 +78,10 @@ function ImpactRow({ factor }) {
         )}
       </div>
       <div className="min-w-0 text-right">
-        <p className={`truncate font-mono text-xs font-semibold tabular-nums ${textColor}`}>
+        <p className={`font-mono text-xs font-semibold leading-tight tabular-nums ${textColor}`}>
           {formatPercent(effect, { signed: true, digits: 0 })} <span className="font-normal">{effectLabel}</span>
         </p>
-        <p className="truncate font-mono text-[10px] tabular-nums text-slate-500" title="Percentage points of the Earth-vs-space difference this driver explains">
+        <p className="font-mono text-[10px] leading-tight tabular-nums text-slate-500" title="Percentage points of the Earth-vs-space difference this driver explains">
           {gapLabel}
         </p>
       </div>
