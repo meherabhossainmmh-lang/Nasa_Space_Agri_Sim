@@ -27,12 +27,6 @@ const PANEL = '#0b1222'
 const TRAY = '#1a2740'
 const TRAY_Y = -0.85
 
-const CROP_STYLE = {
-  lettuce: { leaf: '#3fbf6b', kind: 'rosette' },
-  tomato: { leaf: '#2f9e5a', kind: 'vine' },
-  radish: { leaf: '#35b26a', kind: 'rosette' },
-}
-
 const tmpObject = new THREE.Object3D()
 const tmpColor = new THREE.Color()
 
@@ -145,17 +139,76 @@ function Trays({ rows }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* plants (instanced)                                                  */
+/* plants (instanced leaves)                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Simplified plant archetypes. Leaves are one shared curved-leaf geometry
+ * drawn as instances, so a full chamber is a handful of draw calls.
+ *   rosette  - lettuce / radish: whorls of leaves around a very short stem
+ *   vine     - tomato: a taller stem with tiers of leaflets and fruit
+ * Leaf count, length and tilt are presentation choices scaled by the
+ * simulation's canopy fraction; they are not a growth model.
+ */
+const PLANT_ARCHETYPES = {
+  lettuce: { kind: 'rosette', leaf: '#4cbf6e', length: 0.56, width: 0.55, whorls: [{ n: 7, tilt: 1.2, size: 1.0 }, { n: 5, tilt: 0.8, size: 0.78 }, { n: 4, tilt: 0.4, size: 0.55 }] },
+  radish: { kind: 'rosette', leaf: '#3fae62', length: 0.5, width: 0.32, whorls: [{ n: 6, tilt: 0.95, size: 1.0 }, { n: 4, tilt: 0.55, size: 0.7 }], bulb: '#c94a63' },
+  tomato: { kind: 'vine', leaf: '#3a9d5c', length: 0.34, width: 0.36, stem: 1.0, tiers: 4, leafletsPerTier: 5, fruit: '#d9534f' },
+}
+
+/** Pointed leaf outline, cupped across its width and bent down toward the tip. Base at the origin, tip along +Y. */
+function makeLeafGeometry(width) {
+  const shape = new THREE.Shape()
+  shape.moveTo(0, 0)
+  shape.quadraticCurveTo(width, 0.38, 0, 1)
+  shape.quadraticCurveTo(-width, 0.38, 0, 0)
+  const geometry = new THREE.ShapeGeometry(shape, 5)
+  const pos = geometry.attributes.position
+  for (let i = 0; i < pos.count; i += 1) {
+    const x = pos.getX(i)
+    const y = pos.getY(i)
+    pos.setZ(i, -(x * x) * 0.9 - y * y * 0.22)
+  }
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+/** Leaf slots for one plant: local offset, yaw, tilt from vertical and relative size, oldest (outer) leaves first. */
+function leafLayout(archetype) {
+  const slots = []
+  if (archetype.kind === 'rosette') {
+    archetype.whorls.forEach((whorl, w) => {
+      for (let i = 0; i < whorl.n; i += 1) {
+        const yaw = (i / whorl.n) * Math.PI * 2 + w * 0.5
+        slots.push({ yaw, tilt: whorl.tilt, size: whorl.size, height: 0.03 + w * 0.02, radial: 0.02 })
+      }
+    })
+  } else {
+    for (let t = 0; t < archetype.tiers; t += 1) {
+      const height = archetype.stem * (0.3 + (0.7 * t) / (archetype.tiers - 1))
+      for (let i = 0; i < archetype.leafletsPerTier; i += 1) {
+        const yaw = (i / archetype.leafletsPerTier) * Math.PI * 2 + t * 0.8
+        slots.push({ yaw, tilt: 1.25, size: 1 - t * 0.12, height, radial: 0.02 })
+      }
+    }
+  }
+  return slots
+}
+
 function Plants({ state, reduced }) {
-  const style = CROP_STYLE[state.crop] ?? CROP_STYLE.lettuce
+  const archetype = PLANT_ARCHETYPES[state.crop] ?? PLANT_ARCHETYPES.lettuce
   const leavesRef = useRef()
   const stemsRef = useRef()
-  const fruitRef = useRef()
+  const extrasRef = useRef()
   const { w, d } = CHAMBER
 
-  const positions = useMemo(() => {
+  const leafGeometry = useMemo(() => makeLeafGeometry(archetype.width), [archetype.width])
+  const stemGeometry = useMemo(() => new THREE.CylinderGeometry(0.014, 0.026, 1, 6).translate(0, 0.5, 0), [])
+  const slots = useMemo(() => leafLayout(archetype), [archetype])
+  useEffect(() => () => leafGeometry.dispose(), [leafGeometry])
+  useEffect(() => () => stemGeometry.dispose(), [stemGeometry])
+
+  const plants = useMemo(() => {
     const out = []
     if (state.noArea || state.rows === 0) return out
     const rowGap = d / (state.rows + 1)
@@ -166,81 +219,96 @@ function Plants({ state, reduced }) {
         // deterministic jitter so the rows do not look stamped
         const jitter = ((r * 7 + c * 13) % 5) / 5 - 0.5
         out.push({
-          x: -span / 2 + colGap * (c + 0.5) + jitter * 0.08,
-          z: -d / 2 + rowGap * (r + 1) + jitter * 0.1,
-          phase: (r * 3 + c) * 0.7,
-          leafCount: 3,
+          x: -span / 2 + colGap * (c + 0.5) + jitter * 0.06,
+          z: -d / 2 + rowGap * (r + 1) + jitter * 0.08,
+          phase: ((r * 3 + c) % 7) * 0.9,
+          vigor: 0.88 + ((r * 5 + c * 11) % 7) / 28, // per-plant size variation, +-12 %
         })
       }
     }
     return out
   }, [state.rows, state.perRow, state.noArea, w, d])
 
-  const count = positions.length
-  const scale = Math.max(state.canopyScale, 0.05)
-  const color = useMemo(() => leafColor(style.leaf, state.health, state.waterDeficit), [style.leaf, state.health, state.waterDeficit])
-  const droop = state.waterDeficit ? 0.35 : 0 // leaves tilt down under water deficit (illustrative)
-  const showFruit = style.kind === 'vine' && state.canopyScale > 0.55
+  const plantCount = plants.length
+  const leafCount = plantCount * slots.length
+  const scale = Math.max(state.canopyScale, 0.16)
+  // young canopies show only the first (outer) leaves; the rest unfold as biomass builds up
+  const visibleLeaves = Math.max(2, Math.round(slots.length * Math.min(1, 0.25 + scale * 0.85)))
+  const color = useMemo(() => leafColor(archetype.leaf, state.health, state.waterDeficit), [archetype.leaf, state.health, state.waterDeficit])
+  const droop = state.waterDeficit ? 0.4 : 0 // extra downward tilt under water deficit (illustrative stress cue)
+  const extras = archetype.kind === 'vine' ? 'fruit' : archetype.bulb ? 'bulb' : null
+  const showExtras = extras === 'fruit' ? state.canopyScale > 0.55 : state.canopyScale > 0.35
 
-  // write instance transforms whenever the state changes
+  // write instance transforms whenever the state changes (not per frame)
   useEffect(() => {
     const leaves = leavesRef.current
     const stems = stemsRef.current
     if (!leaves || !stems) return
-    positions.forEach((p, i) => {
-      const s = scale * (0.85 + ((i * 37) % 10) / 40)
-      // stem
-      tmpObject.position.set(p.x, TRAY_Y + 0.09 + 0.18 * s, p.z)
+    const baseY = TRAY_Y + 0.085
+    plants.forEach((plant, pi) => {
+      const s = scale * plant.vigor
+      const stemHeight = archetype.kind === 'vine' ? archetype.stem * s : 0.05 * s
+      tmpObject.position.set(plant.x, baseY, plant.z)
       tmpObject.rotation.set(0, 0, 0)
-      tmpObject.scale.set(1, s, 1)
+      tmpObject.scale.set(s, stemHeight, s)
       tmpObject.updateMatrix()
-      stems.setMatrixAt(i, tmpObject.matrix)
-      // canopy
-      const canopyY = TRAY_Y + 0.09 + (style.kind === 'vine' ? 0.5 : 0.34) * s
-      tmpObject.position.set(p.x, canopyY, p.z)
-      tmpObject.rotation.set(droop * 0.6, p.phase, droop * 0.4)
-      const flat = style.kind === 'vine' ? 0.9 : 0.55
-      tmpObject.scale.set(s, s * flat * (1 - droop * 0.3), s)
-      tmpObject.updateMatrix()
-      leaves.setMatrixAt(i, tmpObject.matrix)
-      leaves.setColorAt(i, tmpColor.copy(color).offsetHSL(0, 0, (((i * 11) % 7) - 3) * 0.012))
-      if (fruitRef.current) {
-        tmpObject.position.set(p.x + 0.1 * s, canopyY - 0.08 * s, p.z + 0.1 * s)
-        tmpObject.rotation.set(0, 0, 0)
-        tmpObject.scale.setScalar(showFruit ? s : 0.0001)
+      stems.setMatrixAt(pi, tmpObject.matrix)
+
+      slots.forEach((slot, li) => {
+        const index = pi * slots.length + li
+        const visible = li < visibleLeaves
+        const yaw = slot.yaw + plant.phase
+        const tilt = Math.min(slot.tilt + droop, 1.5)
+        tmpObject.position.set(plant.x + Math.sin(yaw) * slot.radial * s, baseY + slot.height * s, plant.z + Math.cos(yaw) * slot.radial * s)
+        tmpObject.rotation.set(tilt, yaw, 0, 'YXZ')
+        const len = visible ? archetype.length * slot.size * s : 0.0001
+        tmpObject.scale.set(len, len, len)
         tmpObject.updateMatrix()
-        fruitRef.current.setMatrixAt(i, tmpObject.matrix)
+        leaves.setMatrixAt(index, tmpObject.matrix)
+        leaves.setColorAt(index, tmpColor.copy(color).offsetHSL(0, 0, ((((pi + li) * 11) % 7) - 3) * 0.012 - (1 - slot.size) * 0.03))
+      })
+
+      if (extrasRef.current) {
+        const es = showExtras ? s : 0.0001
+        if (extras === 'fruit') {
+          tmpObject.position.set(plant.x + 0.09 * s, baseY + archetype.stem * 0.55 * s, plant.z + 0.08 * s)
+          tmpObject.scale.setScalar(es * 0.07)
+        } else {
+          tmpObject.position.set(plant.x, baseY + 0.02 * s, plant.z)
+          tmpObject.scale.set(es * 0.075, es * 0.06, es * 0.075)
+        }
+        tmpObject.rotation.set(0, 0, 0)
+        tmpObject.updateMatrix()
+        extrasRef.current.setMatrixAt(pi, tmpObject.matrix)
       }
     })
     leaves.instanceMatrix.needsUpdate = true
     if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true
     stems.instanceMatrix.needsUpdate = true
-    if (fruitRef.current) fruitRef.current.instanceMatrix.needsUpdate = true
-  }, [positions, scale, color, droop, style.kind, showFruit])
+    if (extrasRef.current) extrasRef.current.instanceMatrix.needsUpdate = true
+  }, [plants, slots, scale, visibleLeaves, color, droop, archetype, extras, showExtras])
 
   // very slow, tiny sway so the chamber does not look frozen
   useFrame(({ clock }) => {
     if (reduced || !leavesRef.current) return
-    leavesRef.current.rotation.z = Math.sin(clock.elapsedTime * 0.5) * 0.008
+    leavesRef.current.rotation.z = Math.sin(clock.elapsedTime * 0.5) * 0.006
   })
 
-  if (count === 0) return null
-  const canopyRadius = style.kind === 'vine' ? 0.26 : 0.36
+  if (plantCount === 0) return null
 
   return (
     <group>
-      <instancedMesh ref={stemsRef} args={[undefined, undefined, count]} key={`stems-${count}`}>
-        <cylinderGeometry args={[0.022, 0.034, 0.36, 6]} />
-        <meshStandardMaterial color="#4f7d52" roughness={0.9} />
+      <instancedMesh ref={stemsRef} args={[stemGeometry, undefined, plantCount]} key={`stems-${plantCount}`}>
+        <meshStandardMaterial color="#5f8a5a" roughness={0.9} />
       </instancedMesh>
-      <instancedMesh ref={leavesRef} args={[undefined, undefined, count]} key={`leaves-${count}`}>
-        <icosahedronGeometry args={[canopyRadius, 1]} />
-        <meshStandardMaterial color={color} roughness={0.85} flatShading />
+      {/* material colour stays white: the per-instance colour carries the crop tint */}
+      <instancedMesh ref={leavesRef} args={[leafGeometry, undefined, leafCount]} key={`leaves-${leafCount}-${archetype.width}`}>
+        <meshStandardMaterial color="#ffffff" roughness={0.72} side={THREE.DoubleSide} />
       </instancedMesh>
-      {style.kind === 'vine' && (
-        <instancedMesh ref={fruitRef} args={[undefined, undefined, count]} key={`fruit-${count}`}>
-          <sphereGeometry args={[0.05, 8, 6]} />
-          <meshStandardMaterial color="#e05b5b" roughness={0.5} />
+      {extras && (
+        <instancedMesh ref={extrasRef} args={[undefined, undefined, plantCount]} key={`${extras}-${plantCount}`}>
+          <sphereGeometry args={[1, 10, 8]} />
+          <meshStandardMaterial color={extras === 'fruit' ? archetype.fruit : archetype.bulb} roughness={0.55} />
         </instancedMesh>
       )}
     </group>
