@@ -400,7 +400,7 @@ function CameraRig({ reduced, orbit }) {
   const invalidate = useThree((s) => s.invalidate)
   const size = useThree((s) => s.size)
   // narrow viewports (tablet / phone) get a longer shot so the whole chamber stays in frame
-  const distance = CAMERA_HOME.z * Math.max(1, 1.45 / Math.max(size.width / size.height, 0.5))
+  const distance = CAMERA_HOME.z * Math.max(1, 2.1 / Math.max(size.width / size.height, 0.5))
   // very slow drift around the chamber; with reduced motion the camera stays put
   useFrame(({ camera, clock }) => {
     const t = reduced || !orbit ? 0 : clock.elapsedTime * 0.06
