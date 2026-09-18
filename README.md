@@ -75,8 +75,10 @@ transparent mathematical prototype, not a calibrated or validated twin.
   snapshot, Earth‑vs‑space impact breakdown, generated mission insight and
   what‑if comparison, growth and life‑support charts, mission timeline
 - A 3D **Space Growth Chamber** digital‑twin view (Three.js / React Three
-  Fiber) that visualises the simulation outputs — optional, lazy‑loaded, with
-  a 2D fallback when WebGL is unavailable
+  Fiber): transparent chamber, crop trays, instanced plants, grow lights, water
+  manifold, monitoring points and radiation / CO₂ / O₂ indicators, all driven
+  by the simulation outputs — on by default where WebGL and the device allow,
+  lazy‑loaded, with a 3D VIEW ON/OFF switch and a 2D schematic fallback
 - Explicit separation of **standing biomass**, **harvested yield**,
   **cumulative harvest**, **next harvest** and **potential harvest**
 - Water loop semantics: **demand / supplied / deficit / recovered**
@@ -125,7 +127,10 @@ For every change the dashboard shows, top to bottom:
 6. **Life support** — a **water loop** chart (demand / supplied / deficit /
    recovered) and a separate **atmosphere** chart (CO₂ removed / O₂ produced),
    per day or cumulative, each on a single axis.
-7. **Space growth chamber** — the 3D digital‑twin view (toggle ON/OFF).
+7. **Space growth chamber** — the 3D digital‑twin view (3D VIEW ON/OFF).
+   Plant size follows standing biomass, leaf colour follows the space‑vs‑Earth
+   ratio, the water manifold turns amber in deficit, the radiation strip warns
+   at high dose and the CO₂ / O₂ strips follow the setting and the gas exchange.
 8. **Model assumptions** — collapsible formulas and constants, and the
    **model status** block (Phase 1 · not NASA‑validated · GeneLab/OSDR planned).
 
@@ -133,7 +138,8 @@ Example behaviour (defaults, lettuce, 30 days, 10 m²):
 
 ```
 Earth: 23.1 kg   Space: 18.3 kg   Difference: -20.9 %
-Gravity −15 % · Radiation −7 % · Water 0 % · Light 0 % · CO₂ 0 % (shared) → combined −20.9 %
+Gravity ×0.85 −15 % penalty · Radiation ×0.93 −7 % penalty · Water ×1.00 · Light ×1.00 ·
+CO₂ ×1.18 +18 % support (same in the Earth run, so 0 pts of the gap) → combined −20.9 %
 Harvest: NO HARVEST WITHIN SIMULATION WINDOW — simulation ends Day 30, lettuce harvest cycle Day 35
 ```
 
