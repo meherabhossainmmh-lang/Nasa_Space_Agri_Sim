@@ -71,7 +71,7 @@ export default function ModelAssumptions({ assumptions = [], modelStatus, discla
           </dl>
           <p className="label-tech mt-3">Planned</p>
           <ul className="mt-1 space-y-1 text-[11px] text-slate-400">
-            {(modelStatus?.planned ?? ['NASA GeneLab / OSDR data integration', 'Data-driven calibration of response curves']).map((item) => (
+            {(modelStatus?.planned ?? ['Phase 2 - NASA GeneLab / OSDR data integration', 'Phase 3 - ML / model fitting', 'Phase 4 - full mission digital twin']).map((item) => (
               <li key={item} className="flex gap-2">
                 <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-500" aria-hidden="true" />
                 {item}

@@ -54,11 +54,11 @@ export default function EarthSpaceComparison({ result, mode, onModeChange }) {
 
           {defined && c.impact ? (
             <div>
-              <p className="label-tech mb-2">Impact by driver · space scenario</p>
+              <p className="label-tech mb-2">Model factor effects · space scenario</p>
               <ImpactBreakdown impact={c.impact} combinedFactor={result.space?.factors?.combined} />
               <p className="mt-2 text-[10px] leading-snug text-slate-500">
-                Bars show each driver’s own effect on growth relative to reference conditions (1 g, background radiation, full water,
-                optimal light, ambient CO₂). The small figure is how many percentage points of the Earth‑vs‑space gap it explains once the
+                Bars show each driver’s modelled effect on growth relative to reference conditions (1 g, background radiation, full water,
+                optimal light, ambient CO₂) — assumed Phase 1 response curves, not measured values. The small figure is how many percentage points of the Earth‑vs‑space gap it explains once the
                 earlier drivers are applied (gravity → radiation → water → light → CO₂); those points add up exactly to the combined
                 difference.{mode === 'matched' && ' In matched mode water, light and CO₂ are identical in both runs, so they support growth but explain none of the gap.'}
               </p>

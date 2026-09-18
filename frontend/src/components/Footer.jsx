@@ -8,7 +8,7 @@ export default function Footer({ disclaimer }) {
         <p className="max-w-3xl">
           {disclaimer ||
             'Phase 1 mathematical prototype. Outputs are based on documented simulation assumptions, not on validated NASA data or predictions.'}{' '}
-          NASA GeneLab / OSDR data integration and machine learning are planned for later phases.
+          Roadmap: Phase 2 NASA GeneLab / OSDR data integration &amp; calibration · Phase 3 ML / model fitting · Phase 4 full mission digital twin.
         </p>
         <p className="shrink-0 font-mono text-[10px] tracking-wider text-slate-500">SPACEAGRISIM · PHASE 1</p>
       </div>

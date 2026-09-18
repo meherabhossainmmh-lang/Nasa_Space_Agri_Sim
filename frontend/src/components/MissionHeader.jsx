@@ -14,8 +14,8 @@ export default function MissionHeader({ isLoading, error, hasResult }) {
             <p className="whitespace-nowrap font-mono text-[12px] font-semibold tracking-[0.2em] text-slate-100 sm:text-sm sm:tracking-[0.28em]">
               SPACEAGRISIM
             </p>
-            <p className="label-tech hidden truncate sm:block">Space agriculture &amp; life support digital twin</p>
-            <p className="label-tech truncate sm:hidden">Digital twin · Phase 1</p>
+            <p className="label-tech hidden truncate sm:block">Space agriculture &amp; life support simulation</p>
+            <p className="label-tech truncate sm:hidden">Mathematical prototype · Phase 1</p>
           </div>
           <span className="ml-1 hidden shrink-0 rounded border border-line-strong px-2 py-0.5 font-mono text-[10px] tracking-[0.18em] text-slate-400 lg:inline">
             PHASE 1 • MATHEMATICAL PROTOTYPE

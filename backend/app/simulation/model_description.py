@@ -17,9 +17,9 @@ MODEL_STATUS = {
     "dataSource": "Documented simulation assumptions (no measured datasets)",
     "validation": "Not validated against NASA or experimental data",
     "planned": [
-        "NASA GeneLab / OSDR data integration to calibrate crop responses",
-        "Replacing assumed response curves with data-driven parameters",
-        "Machine-learning assisted prediction on top of the calibrated model",
+        "Phase 2 - NASA GeneLab / OSDR data integration to calibrate the crop responses",
+        "Phase 3 - ML / model fitting: replacing assumed response curves with fitted parameters",
+        "Phase 4 - full mission digital twin built on the calibrated model",
     ],
 }
 

@@ -37,7 +37,7 @@ const LEGEND = [
 ]
 
 /**
- * SPACE GROWTH CHAMBER digital twin.
+ * SPACE GROWTH CHAMBER - 3D digital-twin visualization of the simulation.
  *
  * - on by default when WebGL is available and the device looks capable,
  *   with a clear 3D VIEW ON/OFF switch (choice is remembered)
@@ -90,7 +90,7 @@ export default function DigitalTwin3D({ result }) {
       id="digital-twin"
       eyebrow="07"
       title="Space growth chamber"
-      subtitle="3D digital twin · driven by the simulation outputs, not by its own model"
+      subtitle="3D digital-twin visualization · driven by the simulation outputs, not by a model of its own"
       padded={false}
       action={
         <button
@@ -144,7 +144,7 @@ export default function DigitalTwin3D({ result }) {
           )}
         </div>
 
-        <aside className="border-t border-line px-4 py-3 lg:border-l lg:border-t-0" aria-label="Digital twin legend">
+        <aside className="border-t border-line px-4 py-3 lg:border-l lg:border-t-0" aria-label="Growth chamber legend">
           <p className="label-tech">Legend</p>
           <ul className="mt-2 space-y-2">
             {LEGEND.map((item) => (
