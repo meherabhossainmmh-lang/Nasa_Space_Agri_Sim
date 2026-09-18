@@ -1,6 +1,6 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import Panel from './Panel.jsx'
-import { deriveTwinState, webglAvailable } from '../services/twinState.js'
+import { deriveTwinState, deviceCanRender3D, webglAvailable } from '../services/twinState.js'
 import { formatDay, formatMass, formatNumber, formatPercent } from '../services/formatters.js'
 
 // three.js is only downloaded when the twin is switched on
@@ -8,38 +8,51 @@ const GrowthChamberScene = lazy(() => import('../three/GrowthChamberScene.jsx'))
 
 const STORAGE_KEY = 'spaceagrisim.twin3d'
 
+/** 'on' | 'off' when the user has toggled the view before, otherwise null. */
 function readStoredPreference() {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'on'
+    const value = window.localStorage.getItem(STORAGE_KEY)
+    return value === 'on' || value === 'off' ? value : null
   } catch {
-    return false
+    return null
   }
+}
+
+/**
+ * 3D is on by default when the browser has WebGL and the device looks capable;
+ * an explicit user choice always wins. Weak devices and small screens start in 2D.
+ */
+function initialEnabled(webgl) {
+  const stored = readStoredPreference()
+  if (stored) return stored === 'on'
+  return webgl && deviceCanRender3D()
 }
 
 const LEGEND = [
   { key: 'growth', label: 'Growth', color: '#4ade80', read: (s) => `${formatNumber(s.canopyScale * 100, 0)}% of a full canopy` },
   { key: 'water', label: 'Water', color: '#60a5fa', read: (s) => (s.waterDeficit ? `${formatNumber(s.waterSupply * 100, 0)}% supplied · deficit` : 'demand met') },
-  { key: 'radiation', label: 'Radiation', color: '#f87171', read: (s) => `${formatNumber(s.radiation * 3, 2)} mGy/day` },
-  { key: 'co2', label: 'CO₂', color: '#c084fc', read: (s) => `${formatNumber(300 + s.co2Level * 2700, 0)} ppm` },
+  { key: 'radiation', label: 'Radiation', color: '#f87171', read: (s) => `${formatNumber(s.radiationMgy, 2)} mGy/day${s.radiationWarning ? ' · warning' : ''}` },
+  { key: 'co2', label: 'CO₂', color: '#c084fc', read: (s) => `${formatNumber(s.co2Ppm, 0)} ppm` },
   { key: 'o2', label: 'O₂', color: '#7dd3fc', read: (s) => `${formatNumber(s.gasActivity * 100, 0)}% exchange activity` },
 ]
 
 /**
  * SPACE GROWTH CHAMBER digital twin.
  *
- * - off by default, switched on with a toggle (keeps first paint light)
+ * - on by default when WebGL is available and the device looks capable,
+ *   with a clear 3D VIEW ON/OFF switch (choice is remembered)
  * - lazy-loads three.js / react-three-fiber
- * - falls back to a 2D schematic when WebGL is unavailable
+ * - falls back to a 2D schematic when WebGL is unavailable or the renderer fails
  * - reads only from the simulation result (via deriveTwinState)
  */
 export default function DigitalTwin3D({ result }) {
-  const [enabled, setEnabled] = useState(readStoredPreference)
+  const webgl = useMemo(() => webglAvailable(), [])
+  const [enabled, setEnabled] = useState(() => initialEnabled(webgl))
   const [reducedMotion, setReducedMotion] = useState(false)
   const [renderError, setRenderError] = useState(null)
   const [inView, setInView] = useState(true)
   const viewportRef = useRef(null)
   const state = useMemo(() => deriveTwinState(result), [result])
-  const webgl = useMemo(() => webglAvailable(), [])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -119,9 +132,15 @@ export default function DigitalTwin3D({ result }) {
                 </Suspense>
               </SceneErrorBoundary>
               <div className="pointer-events-none absolute left-3 top-3 rounded border border-line bg-space-950/70 px-2 py-1 font-mono text-[10px] tracking-wider text-slate-300">
-                {formatDay(state.day)} · {state.harvestWithinWindow ? 'HARVEST CYCLE COMPLETE' : `NEXT HARVEST ${formatDay(state.nextHarvestDay).toUpperCase()}`}
+                {formatDay(state.day)} · {harvestCaption(state)}
               </div>
+              <StatusTags state={state} />
             </div>
+          )}
+          {state && (
+            <p className="pointer-events-none absolute bottom-2 right-3 font-mono text-[9px] tracking-wider text-slate-500">
+              VISUALIZATION DRIVEN BY SIMULATION OUTPUTS
+            </p>
           )}
         </div>
 
@@ -148,6 +167,32 @@ export default function DigitalTwin3D({ result }) {
         </aside>
       </div>
     </Panel>
+  )
+}
+
+/** Overlay caption: what the chamber is showing in harvest terms. */
+function harvestCaption(state) {
+  if (!state.harvestWithinWindow) return `NEXT HARVEST ${formatDay(state.nextHarvestDay).toUpperCase()}`
+  const cycles = state.cyclesCompleted
+  return `${cycles} HARVEST${cycles === 1 ? '' : 'S'} · LAST ${formatDay(state.lastHarvestDay).toUpperCase()} · REGROWING`
+}
+
+/** Small amber tags that make the stress cues in the scene explicit. */
+function StatusTags({ state }) {
+  const tags = []
+  if (state.noArea) tags.push('NO GROWING AREA')
+  else if (state.noGrowth) tags.push('NO GROWTH')
+  if (state.waterDeficit) tags.push('WATER DEFICIT')
+  if (state.radiationWarning) tags.push('HIGH RADIATION')
+  if (tags.length === 0) return null
+  return (
+    <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-1">
+      {tags.map((tag) => (
+        <span key={tag} className="rounded border border-warn/50 bg-space-950/70 px-2 py-0.5 font-mono text-[10px] tracking-wider text-warn">
+          {tag}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -197,7 +242,7 @@ function SchematicTwin({ state }) {
       {/* indicators */}
       <rect x="46" y="60" width="6" height={10 + state.radiation * 30} fill="#f87171" />
       <rect x="338" y="60" width="6" height={10 + state.co2Level * 30} fill="#c084fc" />
-      <rect x="348" y="60" width="6" height={10 + state.gasActivity * state.canopyScale * 30} fill="#7dd3fc" />
+      <rect x="348" y="60" width="6" height={10 + state.gasActivity * 30} fill="#7dd3fc" />
       {state.noArea && (
         <text x="200" y="105" textAnchor="middle" fill="#94a3b8" fontSize="11" fontFamily="monospace">
           NO GROWING AREA
