@@ -35,25 +35,27 @@ export default function MetricSummary({ result, isLoading }) {
   return (
     <Panel id="mission-snapshot" eyebrow="02" title="Mission snapshot" subtitle="Space scenario totals over the simulation window" padded={false}>
       {/* primary: biomass & harvest */}
-      <div className="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="min-w-0">
           <p className="label-tech">Space scenario · {primaryLabel}</p>
-          <div className={`mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1 transition-opacity ${isLoading ? 'opacity-60' : ''}`}>
-            <span className="font-mono text-4xl font-semibold tabular-nums tracking-tight text-growth sm:text-5xl">
-              {r ? formatMass(r.cropYield) : '–'}
-            </span>
-            {r && comparisonDefined && (
-              <span className="flex flex-wrap items-baseline gap-x-3 font-mono text-sm tabular-nums">
-                <span className="text-slate-300">{formatPercent(comparison.spaceGrowthPercentage, { digits: 0 })} of Earth reference</span>
-                <span className={diffTone === 'danger' ? 'text-danger' : diffTone === 'growth' ? 'text-growth' : 'text-slate-400'}>
-                  {formatPercent(diff, { signed: true })}
-                </span>
-              </span>
-            )}
-            {r && !comparisonDefined && <span className="font-mono text-xs text-slate-500">Earth reference produced no biomass · comparison not defined</span>}
-          </div>
-          <p className="mt-1 text-[11px] text-slate-500">
-            {r ? `${formatNumber(r.growthRate, 1)} g/day average · ${formatNumber(r.inputs.growingArea, 1)} m² · Earth reference ${formatMass(comparison.earthYield)}` : 'Waiting for the first simulation…'}
+          <p className={`mt-1 font-mono text-5xl font-semibold leading-none tabular-nums tracking-tight text-growth transition-opacity sm:text-6xl ${isLoading ? 'opacity-60' : ''}`}>
+            {r ? formatMass(r.cropYield) : '–'}
+          </p>
+          {/* the comparison is the headline judgement, so it sits directly under the number at the same visual level */}
+          {r && comparisonDefined && (
+            <dl className={`mt-3 flex flex-wrap gap-x-6 gap-y-2 transition-opacity ${isLoading ? 'opacity-60' : ''}`}>
+              <HeadlineStat label="of Earth reference" value={formatPercent(comparison.spaceGrowthPercentage, { digits: 0 })} tone="text-slate-100" />
+              <HeadlineStat
+                label="vs Earth"
+                value={formatPercent(diff, { signed: true })}
+                tone={diffTone === 'danger' ? 'text-danger' : diffTone === 'growth' ? 'text-growth' : 'text-slate-300'}
+              />
+              <HeadlineStat label="Earth reference" value={formatMass(comparison.earthYield)} tone="text-slate-300" />
+            </dl>
+          )}
+          {r && !comparisonDefined && <p className="mt-3 font-mono text-xs text-slate-500">Earth reference produced no biomass · comparison not defined</p>}
+          <p className="mt-2 text-[11px] text-slate-500">
+            {r ? `${formatNumber(r.growthRate, 1)} g/day average · ${formatNumber(r.inputs.growingArea, 1)} m² growing area` : 'Waiting for the first simulation…'}
           </p>
 
           {noHarvest && !zeroOutput && (
@@ -142,7 +144,7 @@ export default function MetricSummary({ result, isLoading }) {
           label="Water recovered"
           tone="accent"
           value={r ? formatVolume(water.recovered) : '–'}
-          note={r ? `est. · ${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed recovery` : undefined}
+          note={r ? `estimate · ${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed recovery` : undefined}
           title="Estimated water recovery: share of the supplied water captured again as condensate (assumed closed-loop efficiency)"
           isLoading={isLoading}
         />
@@ -173,12 +175,21 @@ export default function MetricSummary({ result, isLoading }) {
   )
 }
 
+function HeadlineStat({ label, value, tone }) {
+  return (
+    <div className="min-w-0">
+      <dd className={`font-mono text-xl font-semibold tabular-nums sm:text-2xl ${tone}`}>{value}</dd>
+      <dt className="label-tech">{label}</dt>
+    </div>
+  )
+}
+
 function HarvestCell({ label, value, note, tone, isLoading }) {
   return (
     <div className="min-w-0 rounded-md border border-line bg-space-800/50 px-3 py-2">
-      <dt className="label-tech truncate">{label}</dt>
-      <dd className={`mt-0.5 font-mono text-lg font-semibold tabular-nums transition-opacity ${tone} ${isLoading ? 'opacity-60' : ''}`}>{value}</dd>
-      {note && <dd className="truncate text-[10px] text-slate-500">{note}</dd>}
+      <dt className="label-tech leading-tight">{label}</dt>
+      <dd className={`mt-0.5 font-mono text-base font-semibold tabular-nums transition-opacity ${tone} ${isLoading ? 'opacity-60' : ''}`}>{value}</dd>
+      {note && <dd className="text-[10px] leading-snug text-slate-500">{note}</dd>}
     </div>
   )
 }

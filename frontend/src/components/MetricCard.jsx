@@ -27,7 +27,7 @@ export default function MetricCard({ label, value, unit, note, noteTone = 'muted
         <span className={`font-mono font-semibold tabular-nums ${valueSize} ${TONES[tone] ?? TONES.neutral}`}>{value}</span>
         {unit && <span className="text-[11px] text-slate-500">{unit}</span>}
       </p>
-      {note && <p className={`mt-0.5 truncate text-[11px] ${TONES[noteTone] ?? TONES.muted}`}>{note}</p>}
+      {note && <p className={`mt-0.5 text-[11px] leading-snug ${TONES[noteTone] ?? TONES.muted}`}>{note}</p>}
     </article>
   )
 }
