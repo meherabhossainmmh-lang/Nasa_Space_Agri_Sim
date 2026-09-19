@@ -118,7 +118,7 @@ For every change the dashboard shows, top to bottom:
    (e.g. `18.3 kg · 79 % of Earth reference · −20.9 %`), then **harvested
    yield**, **cumulative harvest**, **next harvest (day)** and **potential
    harvest**, then the secondary water‑loop and atmosphere metrics.
-3. **Why is space different?** — Earth vs space yield bars and a per‑driver
+3. **Why is space different?** — Earth vs space biomass bars and a per‑driver
    **model factor effects** (gravity, radiation, water, light, CO₂ → combined)
    — assumed Phase 1 response curves, not measured values.
 4. **Mission insight** — a summary sentence generated from the outputs, plus a
@@ -159,7 +159,7 @@ into a reported water deficit.
 | **Cumulative harvest** | All harvests inside the window added up |
 | **Total biomass produced** (`cropYield`) | Standing + cumulative harvest |
 | **Next harvest** | First harvest day after the window ends |
-| **Potential harvest** | What one full cycle yields under the space conditions |
+| **Potential harvest** | Biomass one full cycle would deliver at harvest under the space conditions |
 
 A 30‑day lettuce run has 18.3 kg of standing biomass and **0 g harvested**,
 because the 35‑day cycle is not finished. The dashboard never presents
@@ -246,9 +246,18 @@ and CO₂ settings so the difference isolates the space environment, in
 **baseline** mode it also resets those to reference values.
 
 ```
-spaceGrowthPercentage = 100 × spaceYield / earthYield
+spaceGrowthPercentage = 100 × spaceBiomass / earthBiomass     # total biomass produced in the window
 differencePercent     = spaceGrowthPercentage − 100
 ```
+
+Both runs use the same crop, area, window and logistic curve, and growth is
+linear in the combined factor, so the ratio is simply the two combined factors
+divided. With the defaults the space run sits at ×0.93 of *reference* growth
+(gravity ×0.85 · radiation ×0.93 · CO₂ ×1.18) while the matched Earth run keeps
+the same CO₂ and sits at ×1.18 — hence 0.93 / 1.18 = 0.79, i.e. 79 % of Earth
+or −20.9 %. The "×0.93 of reference growth" and "79 % of Earth reference"
+figures on the dashboard are therefore two views of the same number, not a
+discrepancy; the panel prints the division explicitly.
 
 When the Earth reference produces nothing (e.g. 0 % water) the comparison is
 flagged `isDefined: false` instead of showing a meaningless −100 %.
