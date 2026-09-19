@@ -1,6 +1,6 @@
 # SpaceAgriSim
 
-**Space Agriculture & Life Support Digital Twin — Phase 1 · Mathematical prototype**
+**Space Agriculture & Life Support Simulation — Phase 1 · Mathematical prototype with a 3D digital‑twin visualization**
 
 An interactive dashboard that models how space and environmental conditions
 (gravity, radiation, water, light, CO₂) affect crop growth and the life‑support
@@ -10,10 +10,11 @@ and the 3D growth chamber update immediately — for both an Earth reference and
 your space scenario, with the difference broken down driver by driver.
 
 > **Phase 1 is a mathematical simulation prototype.**
-> All numbers come from clearly documented simulation assumptions. NASA
-> GeneLab/OSDR data integration and machine learning are planned for later
-> phases. The current simulator does **not** represent validated NASA
-> predictions.
+> All numbers come from clearly documented simulation assumptions; nothing has
+> been calibrated with or validated against NASA GeneLab / OSDR or other
+> experimental data, and the project is not endorsed by NASA. Roadmap:
+> Phase 2 — NASA GeneLab / OSDR data integration & calibration ·
+> Phase 3 — ML / model fitting · Phase 4 — full mission digital twin.
 
 ![Dashboard overview](docs/screenshots/dashboard-overview.png)
 
@@ -23,7 +24,7 @@ your space scenario, with the difference broken down driver by driver.
 
 | Life support (water loop + atmosphere) | Space growth chamber (3D twin) |
 | --- | --- |
-| ![Life support](docs/screenshots/life-support.png) | ![Digital twin](docs/screenshots/digital-twin.png) |
+| ![Life support](docs/screenshots/life-support.png) | ![Space growth chamber](docs/screenshots/digital-twin.png) |
 
 <details>
 <summary>Mobile layout</summary>
@@ -60,9 +61,10 @@ cabin and release oxygen, so a crop module is a life‑support component.
 
 Phase 1 proves the core loop: a parameter‑driven simulation engine behind a
 clean API, and a dashboard that makes the trade‑offs visible in real time —
-including a first, output‑driven 3D view of the growth chamber. The word
-“digital twin” describes the direction of the project; the current model is a
-transparent mathematical prototype, not a calibrated or validated twin.
+including a **3D digital‑twin visualization** of the growth chamber that is
+driven purely by the simulation outputs. “Digital twin” describes where the
+project is heading (Phase 4); the current model is a transparent, assumption‑
+driven mathematical prototype, not a calibrated or validated mission twin.
 
 ## 2. Phase 1 scope
 
@@ -81,7 +83,7 @@ transparent mathematical prototype, not a calibrated or validated twin.
   lazy‑loaded, with a 3D VIEW ON/OFF switch and a 2D schematic fallback
 - Explicit separation of **standing biomass**, **harvested yield**,
   **cumulative harvest**, **next harvest** and **potential harvest**
-- Water loop semantics: **demand / supplied / deficit / recovered**
+- Water loop semantics: **demand / supplied / deficit / estimated recovery**
 - Model assumptions and model status reported by the backend itself
 - Input validation, error handling, responsive layout, keyboard access
 - Unit + API tests for the engine
@@ -117,7 +119,8 @@ For every change the dashboard shows, top to bottom:
    yield**, **cumulative harvest**, **next harvest (day)** and **potential
    harvest**, then the secondary water‑loop and atmosphere metrics.
 3. **Why is space different?** — Earth vs space yield bars and a per‑driver
-   impact breakdown (gravity, radiation, water, light, CO₂ → combined).
+   **model factor effects** (gravity, radiation, water, light, CO₂ → combined)
+   — assumed Phase 1 response curves, not measured values.
 4. **Mission insight** — a summary sentence generated from the outputs, plus a
    *what changed?* table: pin the current scenario as a baseline, change one
    parameter, and see the biomass / O₂ / CO₂ / water‑deficit deltas.
@@ -462,22 +465,23 @@ cd frontend && npm run build    # production build (3D scene is a separate lazy 
 
 ## 11. Future roadmap
 
-- **Phase 2 — data calibration**: replace the constants in
-  `simulation_constants.py` with values derived from NASA GeneLab / OSDR and
-  other public research; the engine is built so only that file (or a data
-  loader producing `CropProfile` objects) needs to change.
-- **Phase 3 — learning models**: fit response curves / ML models on the
+- **Phase 2 — NASA GeneLab / OSDR data integration & calibration**: replace
+  the constants in `simulation_constants.py` with values derived from NASA
+  GeneLab / OSDR and other public research; the engine is built so only that
+  file (or a data loader producing `CropProfile` objects) needs to change.
+- **Phase 3 — ML / model fitting**: fit response curves / ML models on the
   calibrated data, expose uncertainty bands in the charts.
-- **Phase 4 — full Digital Twin**: grow the current 3D chamber view into
-  multi‑crop modules, crew demand balancing, scenario saving and mission‑level
-  planning (Moon / Mars transit / surface).
+- **Phase 4 — full mission digital twin**: grow the current 3D chamber
+  visualization into multi‑crop modules, crew demand balancing, scenario saving
+  and mission‑level planning (Moon / Mars transit / surface).
 - More crops, more inputs (temperature, humidity, nutrients, pressure),
   scenario export and sharing.
 
 ---
 
-Phase 1 is a mathematical simulation prototype. NASA GeneLab/OSDR data
-integration and ML are planned for later phases. The current simulator does
-not represent validated NASA predictions.
+Phase 1 is a mathematical simulation prototype. It is not validated against
+NASA or experimental data and is not endorsed by NASA. NASA GeneLab / OSDR data
+integration (Phase 2), ML / model fitting (Phase 3) and a full mission digital
+twin (Phase 4) are planned for later phases.
 
 Licensed under the [MIT License](LICENSE).
