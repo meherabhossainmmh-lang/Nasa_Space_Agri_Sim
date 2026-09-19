@@ -24,7 +24,7 @@ import * as THREE from 'three'
 const CHAMBER = { w: 6.4, h: 2.9, d: 4.2 }
 const FRAME = '#33415c'
 const PANEL = '#0b1222'
-const TRAY = '#1a2740'
+const TRAY = '#1d2c48'
 const TRAY_Y = -0.85
 
 const tmpObject = new THREE.Object3D()
@@ -90,7 +90,7 @@ function Enclosure() {
       {[-1, 1].map((s) => (
         <mesh key={`side${s}`} position={[(s * (w - 0.12)) / 2, 0, 0]}>
           <boxGeometry args={[0.02, h - 0.14, d - 0.14]} />
-          <meshPhysicalMaterial color="#9fd4e6" transparent opacity={0.07} roughness={0.1} metalness={0} transmission={0} />
+          <meshPhysicalMaterial color="#9fd4e6" transparent opacity={0.09} roughness={0.08} metalness={0} transmission={0} />
         </mesh>
       ))}
       <mesh position={[0, 0, d / 2 - 0.06]}>
@@ -322,25 +322,44 @@ function Plants({ state, reduced }) {
 function GrowLights({ light }) {
   const { h, d } = CHAMBER
   const intensity = light
-  const emissive = new THREE.Color('#fde8b8')
+  // horticultural LED bars: a warm-white strip with a subtle red/blue diode pattern, dimmed by the photoperiod
+  const white = useMemo(() => new THREE.Color('#fbeed2'), [])
+  const red = useMemo(() => new THREE.Color('#ff6a5a'), [])
+  const blue = useMemo(() => new THREE.Color('#6aa0ff'), [])
+  const strips = [-2.3, -1.15, 0, 1.15, 2.3]
+  const stripLength = d - 1.2
+  const diodes = 7
   return (
-    <group position={[0, h / 2 - 0.16, 0]}>
-      {[-1.9, 0, 1.9].map((x) => (
+    <group position={[0, h / 2 - 0.14, 0]}>
+      {/* light-bar chassis spanning the chamber, with a discreet rail on each end */}
+      <mesh>
+        <boxGeometry args={[5.4, 0.06, 0.12]} />
+        <meshStandardMaterial color="#111a2e" metalness={0.6} roughness={0.45} />
+      </mesh>
+      {strips.map((x) => (
         <group key={x} position={[x, 0, 0]}>
-          {/* housing */}
           <mesh>
-            <boxGeometry args={[1.4, 0.08, d - 1.0]} />
+            <boxGeometry args={[0.32, 0.06, stripLength + 0.16]} />
             <meshStandardMaterial color="#141d33" metalness={0.6} roughness={0.4} />
           </mesh>
-          {/* LED strip */}
-          <mesh position={[0, -0.045, 0]}>
-            <boxGeometry args={[1.25, 0.012, d - 1.15]} />
-            <meshStandardMaterial color={emissive} emissive={emissive} emissiveIntensity={0.15 + intensity * 1.6} toneMapped={false} />
+          <mesh position={[0, -0.035, 0]}>
+            <boxGeometry args={[0.22, 0.01, stripLength]} />
+            <meshStandardMaterial color={white} emissive={white} emissiveIntensity={0.08 + intensity * 1.3} toneMapped={false} />
           </mesh>
+          {Array.from({ length: diodes }).map((_, i) => {
+            const z = -stripLength / 2 + (stripLength * (i + 0.5)) / diodes
+            const tint = i % 3 === 1 ? blue : red
+            return (
+              <mesh key={i} position={[i % 2 === 0 ? -0.06 : 0.06, -0.045, z]}>
+                <boxGeometry args={[0.05, 0.008, 0.05]} />
+                <meshStandardMaterial color={tint} emissive={tint} emissiveIntensity={0.1 + intensity * 2.2} toneMapped={false} />
+              </mesh>
+            )
+          })}
         </group>
       ))}
       {/* the spot points straight down at the trays (default target is the origin) */}
-      <spotLight position={[0, -0.1, 0]} angle={1.1} penumbra={0.6} intensity={4 + intensity * 30} distance={9} color="#fff4dc" />
+      <spotLight position={[0, -0.1, 0]} angle={1.1} penumbra={0.6} intensity={4 + intensity * 30} distance={9} color="#fff1dc" />
       {/* faint cool fill so the chamber is never black at 0 h */}
       <pointLight position={[0, -0.5, 0]} intensity={1.5} distance={8} color="#8fb7ff" />
     </group>
