@@ -38,7 +38,7 @@ export default function LifeSupportPanel({ result }) {
               </h3>
               <p className="font-mono text-[10px] tabular-nums text-slate-500">
                 demand {formatVolume(water.demand)} · supplied {formatVolume(water.supplied)} ·{' '}
-                <span className={water.deficit > 0 ? 'text-warn' : ''}>deficit {formatVolume(water.deficit)}</span> · recovered{' '}
+                <span className={water.deficit > 0 ? 'text-warn' : ''}>deficit {formatVolume(water.deficit)}</span> · est. recovery{' '}
                 {formatVolume(water.recovered)} ({formatNumber(water.recoveryEfficiency * 100, 0)}% assumed)
               </p>
             </div>
@@ -60,7 +60,7 @@ export default function LifeSupportPanel({ result }) {
               </h3>
               <p className="font-mono text-[10px] tabular-nums text-slate-500">
                 CO₂ removed {formatMass(result.co2Removed)} · O₂ produced {formatMass(result.estimatedOxygenProduced)} · ≈{' '}
-                {formatNumber(ls.crewO2DaysSupported, 1)} crew-days O₂ equivalent
+                {formatNumber(ls.crewO2DaysSupported, 1)} crew-days O₂ · reference equivalent
               </p>
             </div>
             <AtmosphereChart data={result.dailyLifeSupportData} mode={mode} />

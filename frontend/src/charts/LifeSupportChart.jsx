@@ -69,7 +69,7 @@ export function WaterLoopChart({ data = [], mode = 'daily', height = 'h-56' }) {
           {hasDeficit && (
             <Area type="monotone" dataKey={k.deficit} name="Deficit (unmet)" stroke={CHART_COLORS.waterDeficit} strokeWidth={1.75} fill="url(#deficitFill)" dot={false} isAnimationActive={false} />
           )}
-          <Area type="monotone" dataKey={k.recovered} name="Recovered" stroke={CHART_COLORS.waterRecovered} strokeWidth={1.5} fill="none" dot={false} isAnimationActive={false} />
+          <Area type="monotone" dataKey={k.recovered} name="Est. recovery" stroke={CHART_COLORS.waterRecovered} strokeWidth={1.5} fill="none" dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

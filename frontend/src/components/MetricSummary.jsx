@@ -141,10 +141,10 @@ export default function MetricSummary({ result, isLoading }) {
         />
         <MetricCard
           size="sm"
-          label="Water recovered"
+          label="Water recovery"
           tone="accent"
           value={r ? formatVolume(water.recovered) : '–'}
-          note={r ? `estimate · ${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed recovery` : undefined}
+          note={r ? `estimated · ${formatNumber(water.recoveryEfficiency * 100, 0)}% assumed` : undefined}
           title="Estimated water recovery: share of the supplied water captured again as condensate (assumed closed-loop efficiency)"
           isLoading={isLoading}
         />
