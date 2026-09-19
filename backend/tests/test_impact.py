@@ -72,3 +72,32 @@ def test_decompose_handles_both_factors_zero():
     factors = {"light": 1.0, "water": 0.0, "gravity": 0.85, "radiation": 1.0, "co2": 1.0, "combined": 0.0}
     breakdown = decompose_impact(factors, factors)
     assert breakdown.combined_percent == pytest.approx(0.0)
+
+
+def test_yield_ratio_equals_ratio_of_combined_factors():
+    """
+    Growth is linear in the combined factor, so the space / Earth yield ratio
+    must equal combined(space) / combined(Earth) in every mode and window -
+    this is the identity the "Why is space different?" panel prints.
+
+    Default case: space x0.933 / Earth-run x1.180 = 0.79, i.e. -20.9 %, while
+    gravity x radiation alone is also 0.85 x 0.93 = 0.79 (the Earth run keeps
+    the user's CO2 in matched mode, so CO2 cancels out).
+    """
+    cases = (
+        {},
+        {"simulation_days": 90},  # multi-cycle window
+        {"earth_comparison_mode": "baseline", "water_availability": 60},
+        {"crop": "tomato", "gravity": 0.38, "radiation": 2.0, "co2_level": 3000, "simulation_days": 60},
+    )
+    for overrides in cases:
+        result = run_simulation(make_input(**overrides))
+        factor_ratio = result.space.factors["combined"] / result.earth.factors["combined"]
+        yield_ratio = result.space.crop_yield_g / result.earth.crop_yield_g
+        assert yield_ratio == pytest.approx(factor_ratio, rel=1e-9)
+
+    default = run_simulation(make_input())
+    assert default.space.factors["combined"] == pytest.approx(0.933, abs=5e-4)
+    assert default.earth.factors["combined"] == pytest.approx(1.180, abs=5e-4)
+    assert default.space_growth_percentage == pytest.approx(79.06, abs=0.05)
+    assert default.space.factors["gravity"] * default.space.factors["radiation"] == pytest.approx(0.7906, abs=5e-4)

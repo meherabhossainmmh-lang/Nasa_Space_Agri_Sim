@@ -13,12 +13,18 @@ import { formatFactor, formatPercent, formatPoints } from '../services/formatter
  *                      the driver explains (`contributionPoints`). A driver
  *                      that is identical in both runs (matched mode) supports
  *                      growth but explains none of the gap, so it reads
- *                      "shared with Earth run".
+ *                      "same in Earth run".
+ *
+ * The combined box closes the arithmetic explicitly: growth is linear in the
+ * combined factor, so space / Earth = combined(space) / combined(Earth). Both
+ * factors are measured against the same reference conditions, and in matched
+ * mode the Earth run is not x1.00 (it keeps the user's CO2 / water / light),
+ * which is why x0.93 of reference growth can still be 79 % of Earth.
  */
 const SCALE_MAX = 40 // bars are clipped at ±40 % so one huge effect does not flatten the rest
 const EPS = 0.05
 
-export default function ImpactBreakdown({ impact, combinedFactor }) {
+export default function ImpactBreakdown({ impact, spaceCombined, earthCombined }) {
   if (!impact) return null
   const combinedTone = impact.combinedPercent < -EPS ? 'text-danger' : impact.combinedPercent > EPS ? 'text-growth' : 'text-slate-300'
 
@@ -29,16 +35,19 @@ export default function ImpactBreakdown({ impact, combinedFactor }) {
           <ImpactRow key={f.key} factor={f} />
         ))}
       </ul>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded border border-line bg-space-800/60 px-3 py-2">
-        <div className="flex items-baseline gap-2">
+      <div className="mt-3 rounded border border-line bg-space-800/60 px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <span className="label-tech">Combined</span>
-          {combinedFactor != null && (
-            <span className="font-mono text-[11px] tabular-nums text-slate-300">{formatFactor(combinedFactor)} of reference growth</span>
-          )}
+          <span className={`font-mono text-sm font-semibold tabular-nums ${combinedTone}`}>
+            {formatPercent(impact.combinedPercent, { signed: true })} vs Earth
+          </span>
         </div>
-        <span className={`font-mono text-sm font-semibold tabular-nums ${combinedTone}`}>
-          {formatPercent(impact.combinedPercent, { signed: true })} vs Earth
-        </span>
+        {spaceCombined != null && earthCombined != null && (
+          <p className="mt-1 font-mono text-[11px] leading-snug tabular-nums text-slate-400">
+            space {formatFactor(spaceCombined)} ÷ Earth run {formatFactor(earthCombined)} = {formatFactor(spaceCombined / earthCombined)} of reference growth →{' '}
+            {formatPercent((spaceCombined / earthCombined) * 100, { digits: 0 })} of Earth
+          </p>
+        )}
       </div>
     </div>
   )
