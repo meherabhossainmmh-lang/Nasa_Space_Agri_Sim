@@ -68,8 +68,9 @@ export default function ModelAssumptions({ assumptions = [], modelStatus, discla
                 <div className="rounded border border-line bg-space-800/50 px-3 py-2">
                   <dt className="label-tech">Not modelled yet</dt>
                   <dd className="mt-1 text-[11px] leading-relaxed text-slate-400">
-                    Temperature, humidity, nutrients, pressure, respiration, crew metabolism and tank sizing. Nothing is calibrated with
-                    or validated against NASA GeneLab / OSDR or experimental space‑crop data — that is Phase 2.
+                    Temperature, relative humidity, nutrients, atmospheric pressure, human metabolism, the full atmospheric balance and
+                    crew‑level closed‑loop life support (plus respiration and tank sizing) — planned Phase 2 extensions, not missing
+                    features. Nothing is calibrated with or validated against NASA GeneLab / OSDR or experimental space‑crop data yet.
                   </dd>
                 </div>
               </dl>

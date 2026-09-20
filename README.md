@@ -18,7 +18,7 @@ your space scenario, with the difference broken down driver by driver.
 | **Outputs** | Standing biomass · harvested yield · cumulative harvest · next / potential harvest · water demand / supplied / deficit / estimated recovery · CO₂ removed · O₂ produced · Earth‑vs‑space factor effects · generated mission insight |
 | **Visualization** | 3D Space Growth Chamber (Three.js / React Three Fiber) driven purely by the simulation outputs, with a 2D fallback |
 | **Limitation** | Not calibrated with or validated against NASA GeneLab / OSDR or experimental space‑crop data |
-| **Future** | Phase 2 GeneLab / OSDR calibration · Phase 3 ML / model fitting · Phase 4 full mission digital twin |
+| **Future** | Phase 2 NASA open‑science calibration + climate / nutrient / crew‑balance modelling · Phase 3 ML / model fitting · Phase 4 full mission digital twin |
 
 > **Phase 1 is a mathematical simulation prototype.**
 > All numbers come from clearly documented simulation assumptions; nothing has
@@ -338,12 +338,19 @@ In *matched* mode the resources are identical in both runs, so they contribute
 - Radiation response is a simple exponential in dose rate; dose type, LET and
   acute vs chronic exposure are not modelled.
 - Water recovery uses a fixed 90 % efficiency; no tank sizing or system losses.
-- O₂/CO₂ follow textbook stoichiometry with a fixed carbon fraction; respiration,
-  root‑zone gas exchange and the crew's own balance are not modelled.
-- Temperature, humidity, nutrients, pressure and plant stress are not inputs yet.
+- O₂/CO₂ follow textbook stoichiometry with a fixed carbon fraction; respiration
+  and root‑zone gas exchange are not modelled. The crew‑day figures on the
+  dashboard are a reference scale only.
+- **Not modelled in Phase 1** (planned model extensions, not missing features):
+  temperature, relative humidity, nutrients, atmospheric pressure, plant stress,
+  human metabolism (crew O₂ consumption and CO₂ production), the full
+  atmospheric balance, and crew‑level closed‑loop life support. Phase 1 reports
+  what the crop produces and consumes; it does not balance that against a crew.
 - The 3D growth chamber is a visualisation of the simulation outputs only; it
   has no physics or model of its own.
-- Nothing here has been validated against experimental space‑grown crop data.
+- Nothing here has been validated against experimental space‑grown crop data;
+  Phase 1 is a mathematical prototype, not an experimentally or NASA‑validated
+  model.
 
 ## 6. Technology stack
 
@@ -564,17 +571,45 @@ cd frontend && npm run build    # production build (3D scene is a separate lazy 
 
 ## 12. Future roadmap
 
-- **Phase 2 — NASA GeneLab / OSDR data integration & calibration**: replace
-  the constants in `simulation_constants.py` with values derived from NASA
-  GeneLab / OSDR and other public research; the engine is built so only that
-  file (or a data loader producing `CropProfile` objects) needs to change.
+**Phase 1 → Phase 2 boundary.** Phase 1 (this release) is a transparent
+mathematical prototype built on documented assumptions. Phase 2 is the NASA
+open‑science‑informed calibration and expansion of the environmental and
+life‑support modelling. Everything listed below is planned work — none of it is
+implemented in the Phase 1 simulator.
+
+- **Phase 2 — NASA open‑science calibration & model expansion**
+  - *Calibration*: replace the constants in `simulation_constants.py` with
+    values derived from NASA GeneLab / OSDR and other public research; the
+    engine is built so only that file (or a data loader producing
+    `CropProfile` objects) needs to change.
+  - *Climate and Nutrients Controls* (planned module) — to investigate:
+    temperature‑dependent crop growth using a growth‑penalty curve; relative
+    humidity and transpiration effects, particularly under microgravity;
+    hydroponic nutrient delivery and fertilizer depletion over the crop cycle;
+    atmospheric pressure as an environmental factor.
+  - *Crew‑atmosphere balance* (planned): add human O₂ consumption and CO₂
+    production (crew metabolic demand) and a full atmospheric balance next to
+    the existing crop‑side CO₂ removed / O₂ produced, towards closed‑loop
+    crop + crew life‑support analysis. Future versions can combine crop O₂
+    production and CO₂ removal with crew metabolic demand to estimate farm
+    area requirements for closed‑loop crew support; Phase 1 deliberately does
+    not report such figures.
+  - *Resources*: climate, nutrient and crew‑balance modelling should be
+    informed by NASA's Advanced Plant Habitat and other controlled‑environment
+    plant‑growth resources, together with appropriate NASA open‑science data.
+    These resources are intended for future calibration and model
+    development; none of them has been integrated yet.
 - **Phase 3 — ML / model fitting**: fit response curves / ML models on the
   calibrated data, expose uncertainty bands in the charts.
 - **Phase 4 — full mission digital twin**: grow the current 3D chamber
   visualization into multi‑crop modules, crew demand balancing, scenario saving
   and mission‑level planning (Moon / Mars transit / surface).
-- More crops, more inputs (temperature, humidity, nutrients, pressure),
-  scenario export and sharing.
+- Also planned: more crops, scenario export and sharing.
+
+Phase 2 candidates, for reference: temperature · relative humidity · nutrients
+· pressure · climate controls · hydroponic nutrient depletion · human metabolic
+demand · full atmospheric balance · closed‑loop crew + crop life‑support
+analysis.
 
 ---
 

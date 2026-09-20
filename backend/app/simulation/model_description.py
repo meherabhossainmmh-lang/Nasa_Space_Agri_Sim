@@ -17,7 +17,9 @@ MODEL_STATUS = {
     "dataSource": "Documented simulation assumptions (no measured datasets)",
     "validation": "Not validated against NASA or experimental data",
     "planned": [
-        "Phase 2 - NASA GeneLab / OSDR data integration to calibrate the crop responses",
+        "Phase 2 - NASA open-science calibration (GeneLab / OSDR) and model expansion: "
+        "climate and nutrient controls (temperature, relative humidity, nutrients, pressure) "
+        "and crew-atmosphere balance (human metabolic demand, closed-loop crop + crew life support)",
         "Phase 3 - ML / model fitting: replacing assumed response curves with fitted parameters",
         "Phase 4 - full mission digital twin built on the calibrated model",
     ],
