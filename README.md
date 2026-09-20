@@ -154,8 +154,13 @@ For every change the dashboard shows, top to bottom:
    Plant size follows standing biomass, leaf colour follows the space‑vs‑Earth
    ratio, the water manifold turns amber in deficit, the radiation strip warns
    at high dose and the CO₂ / O₂ strips follow the setting and the gas exchange.
-8. **Model assumptions** — collapsible formulas and constants, and the
-   **model status** block (Phase 1 · not NASA‑validated · GeneLab/OSDR planned).
+8. **Model assumptions** — collapsible formulas and constants, an
+   **Assumed in Phase 1** / **Not modelled yet** summary (not modelled yet:
+   temperature, relative humidity, nutrients, atmospheric pressure, human
+   metabolism, the full atmospheric balance and crew‑level closed‑loop life
+   support — planned Phase 2 extensions), and the **model status** block
+   (Phase 1 · mathematical prototype · not NASA‑ or experimentally validated ·
+   Phase 2 roadmap).
 
 Example behaviour (defaults, lettuce, 30 days, 10 m²):
 
@@ -582,18 +587,25 @@ implemented in the Phase 1 simulator.
     values derived from NASA GeneLab / OSDR and other public research; the
     engine is built so only that file (or a data loader producing
     `CropProfile` objects) needs to change.
-  - *Climate and Nutrients Controls* (planned module) — to investigate:
-    temperature‑dependent crop growth using a growth‑penalty curve; relative
-    humidity and transpiration effects, particularly under microgravity;
-    hydroponic nutrient delivery and fertilizer depletion over the crop cycle;
-    atmospheric pressure as an environmental factor.
-  - *Crew‑atmosphere balance* (planned): add human O₂ consumption and CO₂
-    production (crew metabolic demand) and a full atmospheric balance next to
-    the existing crop‑side CO₂ removed / O₂ produced, towards closed‑loop
-    crop + crew life‑support analysis. Future versions can combine crop O₂
-    production and CO₂ removal with crew metabolic demand to estimate farm
-    area requirements for closed‑loop crew support; Phase 1 deliberately does
-    not report such figures.
+  - *Climate and Nutrients Controls* (planned module):
+    - **Temperature** — develop a temperature‑dependent growth‑penalty curve.
+    - **Relative humidity** — model humidity / transpiration effects,
+      particularly under microgravity.
+    - **Nutrients** — model continuous hydroponic nutrient delivery and
+      fertilizer depletion over the crop cycle.
+    - **Pressure** — investigate atmospheric‑pressure effects as a future
+      environmental factor.
+  - *Crew‑atmosphere balance* (planned), next to the existing crop‑side CO₂
+    removed / O₂ produced:
+    - human metabolic O₂ consumption;
+    - human CO₂ production;
+    - full atmospheric balance;
+    - closed‑loop crop + crew life‑support modelling.
+
+    Future versions can combine crop O₂ production and CO₂ removal with crew
+    metabolic demand to estimate farm area requirements for closed‑loop crew
+    support. Such figures need a properly defined crew‑demand and closed‑loop
+    methodology first, so Phase 1 deliberately does not report them.
   - *Resources*: climate, nutrient and crew‑balance modelling should be
     informed by NASA's Advanced Plant Habitat and other controlled‑environment
     plant‑growth resources, together with appropriate NASA open‑science data.
