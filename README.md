@@ -590,9 +590,9 @@ implemented in the Phase 1 simulator.
   - *Climate and Nutrients Controls* (planned module):
     - **Temperature** — develop a temperature‑dependent growth‑penalty curve.
     - **Relative humidity** — model humidity / transpiration effects,
-      particularly under microgravity.
+      especially under microgravity.
     - **Nutrients** — model continuous hydroponic nutrient delivery and
-      fertilizer depletion over the crop cycle.
+      fertilizer depletion across the crop cycle.
     - **Pressure** — investigate atmospheric‑pressure effects as a future
       environmental factor.
   - *Crew‑atmosphere balance* (planned), next to the existing crop‑side CO₂
@@ -604,8 +604,9 @@ implemented in the Phase 1 simulator.
 
     Future versions can combine crop O₂ production and CO₂ removal with crew
     metabolic demand to estimate farm area requirements for closed‑loop crew
-    support. Such figures need a properly defined crew‑demand and closed‑loop
-    methodology first, so Phase 1 deliberately does not report them.
+    support. Such figures will only be introduced once a proper crew‑demand
+    and scaling methodology is established, so Phase 1 deliberately does not
+    report them.
   - *Resources*: climate, nutrient and crew‑balance modelling should be
     informed by NASA's Advanced Plant Habitat and other controlled‑environment
     plant‑growth resources, together with appropriate NASA open‑science data.
