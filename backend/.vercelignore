@@ -1,0 +1,6 @@
+# Keep the Python function bundle small: nothing here is needed at runtime.
+tests/
+__pycache__/
+.pytest_cache/
+.venv/
+venv/

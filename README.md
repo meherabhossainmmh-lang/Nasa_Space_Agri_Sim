@@ -57,8 +57,9 @@ your space scenario, with the difference broken down driver by driver.
 7. [Project structure](#7-project-structure)
 8. [Running the frontend](#8-running-the-frontend)
 9. [Running the backend](#9-running-the-backend)
-10. [Example API request](#10-example-api-request)
-11. [Future roadmap](#11-future-roadmap)
+10. [Deploying to Vercel](#10-deploying-to-vercel)
+11. [Example API request](#11-example-api-request)
+12. [Future roadmap](#12-future-roadmap)
 
 ---
 
@@ -374,7 +375,9 @@ SpaceAgriSim/
 │       ├── services/           # simulationApi, formatters, validation, defaultConfig, insights, twinState
 │       └── styles/index.css    # Tailwind + design tokens
 ├── backend/
-│   ├── requirements.txt
+│   ├── requirements.txt        # runtime dependencies
+│   ├── requirements-dev.txt    # + pytest / httpx
+│   ├── .python-version         # 3.12 (used by Vercel)
 │   ├── app/
 │   │   ├── main.py             # FastAPI app
 │   │   ├── routes/             # health, simulation, error handlers
@@ -384,6 +387,7 @@ SpaceAgriSim/
 │   │   └── config/             # settings + simulation_constants (all assumptions)
 │   └── tests/                  # pytest suite
 ├── docs/screenshots/           # dashboard captures used in this README
+├── vercel.json                 # Vercel deployment: web + api services, /api/* → FastAPI
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -414,18 +418,54 @@ Requires Python 3.11+.
 cd backend
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # runtime deps + pytest/httpx
 uvicorn app.main:app --reload --port 8000
 ```
 
-- Interactive docs: http://localhost:8000/docs
+- Interactive docs: http://localhost:8000/api/docs
 - Health check: http://localhost:8000/api/health
 - Tests: `pytest`
+
+`requirements.txt` holds only what the API needs at runtime (this is what a
+deployment installs); `requirements-dev.txt` adds the test tooling.
 
 No secrets or credentials are needed. Optional settings (CORS origins) can be
 set through environment variables, see `backend/.env.example`.
 
-## 10. Example API request
+## 10. Deploying to Vercel
+
+The repository is set up to deploy as **one Vercel project** with two
+services (`vercel.json`):
+
+| Service | Root | What Vercel does |
+| --- | --- | --- |
+| `web` | `frontend/` | `npm install` + `vite build`, served from the CDN |
+| `api` | `backend/` | installs `requirements.txt`, runs `app.main:app` as a Python 3.12 function |
+
+Requests to `/api/*` are routed to the FastAPI service, everything else to the
+built frontend — same origin, so no CORS or backend URL configuration is
+needed (the frontend already calls the relative path `/api`).
+
+Steps:
+
+1. Push the repository to GitHub (already the case).
+2. In Vercel: **Add New → Project → Import** `meherabmehu/SpaceAgriSim`.
+3. Leave **Root Directory** at the repository root (`./`) — `vercel.json`
+   must be picked up from there. Do not set a framework preset, build command
+   or output directory in the dashboard; the services in `vercel.json` carry
+   their own.
+4. No environment variables are required. Click **Deploy**.
+5. Verify on the deployment URL: `/` (dashboard), `/api/health`,
+   `/api/config`, `/api/docs` (Swagger UI).
+
+After that every push to `main` produces a production deployment and every
+other branch a preview URL. Vercel Services is currently in beta; if you prefer
+two separate projects instead, deploy `backend/` as a FastAPI project and
+`frontend/` as a Vite project, then either add a `frontend/vercel.json` rewrite
+from `/api/(.*)` to the backend URL or set `SPACEAGRISIM_CORS_ORIGINS` on the
+backend to the frontend origin.
+
+## 11. Example API request
 
 ```bash
 curl -X POST http://localhost:8000/api/simulate \
@@ -522,7 +562,7 @@ cd frontend && npm run lint     # ESLint
 cd frontend && npm run build    # production build (3D scene is a separate lazy chunk)
 ```
 
-## 11. Future roadmap
+## 12. Future roadmap
 
 - **Phase 2 — NASA GeneLab / OSDR data integration & calibration**: replace
   the constants in `simulation_constants.py` with values derived from NASA
