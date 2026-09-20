@@ -174,12 +174,12 @@ demand into a reported water deficit — the demand itself does not change.
 
 | Term | Meaning |
 | --- | --- |
-| **Standing biomass** | Edible biomass growing in the chamber at the end of the window, not yet harvested |
-| **Harvested yield** | Biomass of the most recent completed harvest (0 if no cycle finished) |
-| **Cumulative harvest** | All harvests inside the window added up |
+| **Standing biomass** (`harvest.standingBiomass`) | Edible biomass growing in the chamber at the end of the window, not yet harvested |
+| **Harvested yield** (`harvest.lastHarvestYield`) | Biomass of the most recent completed harvest (0 if no cycle finished) |
+| **Cumulative harvest** (`harvest.harvestedYield`) | All harvests inside the window added up — note the API field name is `harvestedYield` |
 | **Total biomass produced** (`cropYield`) | Standing + cumulative harvest |
-| **Next harvest** | First harvest day after the window ends |
-| **Potential harvest** | Biomass one full cycle would deliver at harvest under the space conditions |
+| **Next harvest** (`harvest.nextHarvestDay`) | First harvest day after the window ends |
+| **Potential harvest** (`harvest.potentialHarvest`) | Estimated biomass one full cycle would deliver at harvest under the current conditions — a model projection, not harvested output |
 
 A 30‑day lettuce run has 18.3 kg of standing biomass and **0 g harvested**,
 because the 35‑day cycle is not finished. The dashboard never presents
