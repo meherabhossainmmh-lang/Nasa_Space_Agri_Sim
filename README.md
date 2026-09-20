@@ -126,17 +126,25 @@ For every change the dashboard shows, top to bottom:
 
 1. **Mission overview** — CROP / ENVIRONMENT / RADIATION / DURATION summary.
 2. **Mission snapshot** — the primary biomass figure with its Earth ratio
-   (e.g. `18.3 kg · 79 % of Earth reference · −20.9 %`), then **harvested
-   yield**, **cumulative harvest**, **next harvest (day)** and **potential
-   harvest**, then the secondary water‑loop and atmosphere metrics.
-3. **Why is space different?** — Earth vs space biomass bars and a per‑driver
-   **model factor effects** (gravity, radiation, water, light, CO₂ → combined)
-   — assumed Phase 1 response curves, not measured values.
+   (e.g. `18.3 kg standing biomass · unharvested · Day 30 · 79 % of Earth
+   reference · −20.9 %`), then **harvested yield**, **cumulative harvest**,
+   **next harvest (day)** and **potential harvest**, then the metric cards:
+   water demand / supplied / deficit / recovery (estimated), CO₂ removed and
+   estimated O₂ produced, each with its crew‑day *reference equivalent*.
+3. **Why is space different?** — Earth‑reference vs space‑scenario bars of
+   the **total biomass produced** in the window (standing + harvested; with
+   the default 30‑day lettuce run that is all standing biomass and 0 g
+   harvested), the signed difference in grams and %, the comparison mode
+   (matched resources / Earth baseline) and a per‑driver **model factor
+   effects** waterfall (gravity, radiation, water, light, CO₂ → combined) —
+   assumed Phase 1 response curves, not measured values.
 4. **Mission insight** — a summary sentence generated from the outputs, plus a
    *what changed?* table: pin the current scenario as a baseline, change one
    parameter, and see the biomass / O₂ / CO₂ / water‑deficit deltas.
-5. **Crop growth** — Earth and space curves (standing biomass, harvested yield
-   or total produced), harvest markers, end‑of‑window marker, and a mission
+5. **Crop growth** — Earth and space **standing biomass** over the simulated
+   days, switchable to **harvested yield** (steps up at each harvest) or
+   **total produced** (standing + harvested), with harvest markers when a run
+   spans one or more crop cycles, an end‑of‑window marker, and a mission
    timeline (planting → harvests → simulation end → next harvest).
 6. **Life support** — a **water loop** chart (demand / supplied / deficit /
    recovered) and a separate **atmosphere** chart (CO₂ removed / O₂ produced),
@@ -158,8 +166,9 @@ Harvest: NO HARVEST WITHIN SIMULATION WINDOW — simulation ends Day 30, lettuce
 ```
 
 Raising radiation lowers growth, biomass, CO₂ removal and O₂; cutting water
-availability by 5 % lowers biomass by 5 % and turns the missing 5 % of demand
-into a reported water deficit.
+availability by 5 % lowers the modelled water factor (and so biomass) by 5 %,
+reduces supplied and recovered water accordingly, and turns the missing 5 % of
+demand into a reported water deficit — the demand itself does not change.
 
 ### Biomass vs harvest — how to read the numbers
 
@@ -492,8 +501,13 @@ Units: biomass / CO₂ / O₂ in grams, water in litres, growth rate in g/day.
 Out‑of‑range inputs return `422` with a flat `message` and a per‑field map.
 
 All fields from the first version of the API are still present with the same
-meaning (`waterUsed` = water supplied); the harvest, water‑balance and impact
-blocks were added on top.
+names and meaning — `cropYield` (total biomass produced), `growthRate`,
+`waterUsed` (= water supplied), `waterRecovered`, `co2Removed`,
+`estimatedOxygenProduced`, `spaceGrowthPercentage` — the harvest,
+water‑balance (`waterDemand`, `waterDeficit`, `lifeSupport.water`) and impact
+blocks were added on top. The dashboard's user‑facing labels (standing
+biomass, water supplied, water recovery) describe these fields; the field
+names themselves are unchanged.
 
 Other endpoints: `GET /api/crops` (baseline parameters), `GET /api/config`
 (ranges, defaults, scenario presets, model assumptions and model status — the
