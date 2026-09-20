@@ -53,9 +53,27 @@ export default function ModelAssumptions({ assumptions = [], modelStatus, discla
             {assumptions.length === 0 && <li className="text-[11px] text-slate-500">Assumptions load from the backend once it is reachable.</li>}
           </ul>
           {!open && (
-            <p className="mt-2 font-mono text-[10px] text-slate-500">
-              {assumptions.length} components: {assumptions.map((a) => a.title).join(' · ')}
-            </p>
+            <>
+              <p className="mt-2 font-mono text-[10px] text-slate-500">
+                {assumptions.length} components: {assumptions.map((a) => a.title).join(' · ')}
+              </p>
+              <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded border border-line bg-space-800/50 px-3 py-2">
+                  <dt className="label-tech">Assumed in Phase 1</dt>
+                  <dd className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                    Crop baselines per m², the shape of every response curve (gravity, radiation, water, light, CO₂), the logistic growth
+                    curve, 90 % water recovery and a fixed carbon fraction for CO₂ / O₂. Presets are rounded “‑like” reference points.
+                  </dd>
+                </div>
+                <div className="rounded border border-line bg-space-800/50 px-3 py-2">
+                  <dt className="label-tech">Not modelled yet</dt>
+                  <dd className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                    Temperature, humidity, nutrients, pressure, respiration, crew metabolism and tank sizing. Nothing is calibrated with
+                    or validated against NASA GeneLab / OSDR or experimental space‑crop data — that is Phase 2.
+                  </dd>
+                </div>
+              </dl>
+            </>
           )}
         </div>
 
