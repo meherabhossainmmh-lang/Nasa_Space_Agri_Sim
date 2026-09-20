@@ -181,9 +181,9 @@ unharvested biomass as a harvest.
 | Term | Meaning |
 | --- | --- |
 | **Demand** | What a healthy canopy would want (grows with the canopy and the photoperiod) |
-| **Supplied** | What the system actually delivers = demand × availability (the legacy `waterUsed` field) |
+| **Supplied** | What the system actually delivers = demand × availability (`waterUsed` in the API carries this value) |
 | **Deficit** | Unmet demand = demand − supplied; the shortage already limits growth through the water factor |
-| **Est. water recovery** | Supplied × 90 % assumed closed‑loop recovery efficiency |
+| **Water recovery (estimated)** | Supplied × 90 % assumed closed‑loop recovery efficiency — a model assumption, not a measured value |
 | **Net consumed** | Supplied − recovered = fresh make‑up water |
 
 CO₂ / O₂ crew‑day figures are an *equivalent reference only*; crew metabolism
@@ -220,22 +220,32 @@ biomass(day) = harvestBiomass × growthFactor × area × logistic(day / cycleLen
 ```
 
 If the run is longer than one cycle the crop is harvested and replanted.
-Each daily point carries the **standing** biomass, the **harvested** total so
-far and the **cumulative** (standing + harvested) total, plus a harvest‑day
-flag; the engine also reports harvest days, the next harvest day and the
-potential harvest of one full cycle.
+Each daily point carries the **standing biomass** (growing in the chamber,
+unharvested), the **harvested yield** so far (whole cycles only) and the
+**total produced** (standing + harvested), plus a harvest‑day flag; the engine
+also reports the harvest days, the **next harvest** day and the **potential
+harvest** of one full cycle under the current conditions. A window shorter
+than the cycle (the default 30‑day lettuce run) therefore ends with 18.3 kg of
+standing biomass, **0 g harvested yield** and no completed harvest.
 
 ### 4.3 Water (`water.py`)
 
-Daily demand follows the canopy (a seedling transpires ~15 % of a full
-canopy), scales with the light factor, and is cut by the water shortage:
+Daily **demand** is what a healthy canopy would want: it follows the canopy
+(a seedling transpires ~15 % of a full canopy) and scales with the light
+factor. Lower water availability does **not** lower that biological demand —
+it lowers what is **supplied**, and the gap is reported as the **deficit**:
 
 ```
-demand(day)    = peakWaterPerDay × area × lightFactor × (0.15 + 0.85 × growthFraction)
-supplied(day)  = demand(day) × waterAvailability / 100      # = "used" by the crop
-deficit(day)   = demand(day) − supplied(day)                # unmet demand
-recovered(day) = supplied(day) × 0.90                        # assumed condensate recovery
+canopy         = 0.15 + 0.85 × growthFraction
+demand(day)    = peakWaterPerDay × area × lightFactor × canopy   # crop / environment requirement
+supplied(day)  = demand(day) × waterAvailability / 100           # share of demand actually delivered
+deficit(day)   = demand(day) − supplied(day)                     # unmet demand
+recovered(day) = supplied(day) × recoveryEfficiency              # estimated; recoveryEfficiency = 0.90 (assumed)
 ```
+
+The dashboard shows these as **water demand / water supplied / water deficit /
+water recovery (estimated, 90 % assumed)**. In the API the supplied volume is
+carried by the `waterUsed` field (kept for compatibility).
 
 ### 4.4 CO₂ and O₂ (`gas_exchange.py`)
 
@@ -251,10 +261,23 @@ o2Produced  = co2Removed × 32/44          # 6 CO2 + 6 H2O -> C6H12O6 + 6 O2
 
 ### 4.5 Earth vs space (`engine.py`)
 
-The engine runs the pipeline twice. The Earth reference always uses 1 g and
-background radiation; in **matched** mode (default) it keeps your water, light
-and CO₂ settings so the difference isolates the space environment, in
-**baseline** mode it also resets those to reference values.
+The engine runs the pipeline twice — once for the space scenario and once for
+an Earth reference run — and the dashboard offers two different Earth runs:
+
+| | Matched resources (default) | Earth baseline |
+| --- | --- | --- |
+| Gravity | 1 g | 1 g |
+| Radiation | 0.01 mGy/day (background) | 0.01 mGy/day (background) |
+| Water availability | same as your space scenario | 100 % |
+| Photoperiod | same as your space scenario | the crop's optimum |
+| CO₂ | same as your space scenario | 420 ppm (ambient) |
+| Crop · area · duration | same | same |
+| What it isolates | the modelled effect of gravity and radiation alone | a normalised Earth reference, so your resource settings show up in the gap too |
+
+The two Earth runs are therefore different numbers whenever your water, light
+or CO₂ differ from the reference values (with the defaults only CO₂ does:
+23.1 kg matched vs 19.6 kg baseline). The mode in use is always shown in the
+panel and returned as `comparison.earthComparisonMode`.
 
 ```
 spaceGrowthPercentage = 100 × spaceBiomass / earthBiomass     # total biomass produced in the window
@@ -264,9 +287,11 @@ differencePercent     = spaceGrowthPercentage − 100
 Both runs use the same crop, area, window and logistic curve, and growth is
 linear in the combined factor, so the ratio is simply the two combined factors
 divided. With the defaults the space run sits at ×0.93 of *reference* growth
-(gravity ×0.85 · radiation ×0.93 · CO₂ ×1.18) while the matched Earth run keeps
-the same CO₂ and sits at ×1.18 — hence 0.93 / 1.18 = 0.79, i.e. 79 % of Earth
-or −20.9 %. The "×0.93 of reference growth" and "79 % of Earth reference"
+(gravity ×0.85 · radiation ×0.93 · CO₂ ×1.18) while the matched‑resources
+Earth run keeps the same CO₂ and sits at ×1.18 — hence 0.93 / 1.18 = 0.79,
+i.e. 79 % of Earth or −20.9 %. In Earth‑baseline mode the Earth run is ×1.00,
+so the same space scenario reads 93 % of Earth (−6.7 %) — a different question,
+not a different model. The "×0.93 of reference growth" and "79 % of Earth reference"
 figures on the dashboard are therefore two views of the same number, not a
 discrepancy; the panel prints the division explicitly.
 
