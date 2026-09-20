@@ -9,6 +9,17 @@ removal and O₂ production. Pick a crop, drag a slider, and every number, chart
 and the 3D growth chamber update immediately — for both an Earth reference and
 your space scenario, with the difference broken down driver by driver.
 
+| | |
+| --- | --- |
+| **What** | SpaceAgriSim — a space agriculture & life‑support simulator (NASA Space Apps Challenge project) |
+| **Why** | Crops in a habitat are life‑support hardware: food, water recycling, CO₂ scrubbing and O₂ — mission planners need to see those trade‑offs together |
+| **Current state** | Phase 1 · mathematical prototype, assumption‑driven and fully documented |
+| **How** | Mission controls (crop, gravity, radiation, water, light, CO₂, area, duration) → FastAPI simulation engine → React dashboard |
+| **Outputs** | Standing biomass · harvested yield · cumulative harvest · next / potential harvest · water demand / supplied / deficit / estimated recovery · CO₂ removed · O₂ produced · Earth‑vs‑space factor effects · generated mission insight |
+| **Visualization** | 3D Space Growth Chamber (Three.js / React Three Fiber) driven purely by the simulation outputs, with a 2D fallback |
+| **Limitation** | Not calibrated with or validated against NASA GeneLab / OSDR or experimental space‑crop data |
+| **Future** | Phase 2 GeneLab / OSDR calibration · Phase 3 ML / model fitting · Phase 4 full mission digital twin |
+
 > **Phase 1 is a mathematical simulation prototype.**
 > All numbers come from clearly documented simulation assumptions; nothing has
 > been calibrated with or validated against NASA GeneLab / OSDR or other
@@ -22,7 +33,7 @@ your space scenario, with the difference broken down driver by driver.
 | --- | --- |
 | ![Impact breakdown](docs/screenshots/impact-breakdown.png) | ![Crop growth](docs/screenshots/crop-growth.png) |
 
-| Life support (water loop + atmosphere) | Space growth chamber (3D twin) |
+| Life support (water loop + atmosphere) | Space growth chamber (3D visualization) |
 | --- | --- |
 | ![Life support](docs/screenshots/life-support.png) | ![Space growth chamber](docs/screenshots/digital-twin.png) |
 
