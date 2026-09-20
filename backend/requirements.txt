@@ -1,8 +1,9 @@
+# Runtime dependencies (what the API needs to serve requests; also what
+# Vercel installs for the Python function). Test tooling lives in
+# requirements-dev.txt.
 fastapi>=0.115,<1.0
-uvicorn[standard]>=0.30,<1.0
 pydantic>=2.7,<3.0
 pydantic-settings>=2.3,<3.0
 
-# dev / test
-pytest>=8.0
-httpx>=0.27
+# ASGI server for running locally (Vercel provides its own)
+uvicorn[standard]>=0.30,<1.0

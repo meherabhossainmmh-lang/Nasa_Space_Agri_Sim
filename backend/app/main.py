@@ -20,6 +20,11 @@ app = FastAPI(
         "Phase 1 is a mathematical simulation prototype; the numbers are based on "
         "documented assumptions, not validated NASA predictions."
     ),
+    # Docs live under the API prefix so they stay reachable when only /api/*
+    # is routed to this app (e.g. behind the Vercel rewrite in vercel.json).
+    docs_url=f"{settings.api_prefix}/docs",
+    redoc_url=f"{settings.api_prefix}/redoc",
+    openapi_url=f"{settings.api_prefix}/openapi.json",
 )
 
 app.add_middleware(
@@ -38,4 +43,4 @@ app.include_router(simulation.router, prefix=settings.api_prefix)
 
 @app.get("/", include_in_schema=False)
 def root() -> dict:
-    return {"message": f"{settings.app_name} is running", "docs": "/docs"}
+    return {"message": f"{settings.app_name} is running", "docs": f"{settings.api_prefix}/docs"}
